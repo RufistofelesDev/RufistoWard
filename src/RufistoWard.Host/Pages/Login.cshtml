@@ -1,0 +1,46 @@
+@page
+@model RufistoWard.Core.Pages.LoginModel
+@{
+    Layout = "_LoginLayout";
+    ViewData["Title"] = "Sign In";
+    ViewData["Subtitle"] = "Your identity infrastructure, warded.";
+}
+
+@if (!string.IsNullOrEmpty(Model.ErrorMessage))
+{
+    <div data-testid="error-message" role="alert"
+         class="mb-6 rounded-lg bg-ward-error-light border border-ward-error/20 px-4 py-3 text-sm text-ward-error-text">
+        @Model.ErrorMessage
+    </div>
+}
+
+<form method="post" data-testid="login-form" class="space-y-5">
+    <input type="hidden" name="ReturnUrl" value="@Model.ReturnUrl" />
+
+    <div>
+        <label for="username" class="block text-sm font-medium text-ward-text mb-1">Username or Email</label>
+        <input type="text" id="username" name="UsernameOrEmail"
+               autocomplete="username"
+               data-testid="username-input"
+               required
+               placeholder="e.g. admin@example.com"
+               class="w-full border-2 border-ward-border rounded-xl px-4 py-3 text-sm placeholder:text-ward-inactive
+                      focus-visible:ring-2 focus-visible:ring-ward-primary focus-visible:border-ward-primary outline-none" />
+    </div>
+
+    <div>
+        <label for="password" class="block text-sm font-medium text-ward-text mb-1">Password</label>
+        <input type="password" id="password" name="Password"
+               autocomplete="current-password"
+               data-testid="password-input"
+               required
+               class="w-full border-2 border-ward-border rounded-xl px-4 py-3 text-sm placeholder:text-ward-inactive
+                      focus-visible:ring-2 focus-visible:ring-ward-primary focus-visible:border-ward-primary outline-none" />
+    </div>
+
+    <button type="submit" data-testid="login-button"
+            class="w-full bg-ward-indigo-600 hover:bg-ward-indigo-700 text-white font-semibold
+                   rounded-xl px-6 py-3 text-sm shadow-sm transition-colors">
+        Sign In
+    </button>
+</form>

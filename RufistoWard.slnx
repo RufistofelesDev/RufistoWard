@@ -1,0 +1,14 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/RufistoWard.Application/RufistoWard.Application.csproj" />
+    <Project Path="src/RufistoWard.Domain/RufistoWard.Domain.csproj" />
+    <Project Path="src/RufistoWard.Host/RufistoWard.Host.csproj" />
+    <Project Path="src/RufistoWard.Infrastructure/RufistoWard.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/RufistoWard.Application.Tests/RufistoWard.Application.Tests.csproj" />
+    <Project Path="tests/RufistoWard.Domain.Tests/RufistoWard.Domain.Tests.csproj" />
+    <Project Path="tests/RufistoWard.Host.Tests/RufistoWard.Host.Tests.csproj" />
+    <Project Path="tests/RufistoWard.Infrastructure.Tests/RufistoWard.Infrastructure.Tests.csproj" />
+  </Folder>
+</Solution>

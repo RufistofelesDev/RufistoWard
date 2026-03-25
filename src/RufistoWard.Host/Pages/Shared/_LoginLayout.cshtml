@@ -1,0 +1,23 @@
+@{
+    Layout = null;
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] — RufistoWard</title>
+    <link rel="stylesheet" href="/css/site.css" />
+</head>
+<body class="bg-ward-surface-alt font-body text-ward-text min-h-screen flex items-center justify-center p-4">
+    <main class="w-full max-w-md">
+        <div class="text-center mb-8">
+            <h1 class="text-3xl font-heading font-bold text-ward-chrome-dark">RufistoWard</h1>
+            <p class="text-sm text-ward-muted mt-1">@ViewData["Subtitle"]</p>
+        </div>
+        <div class="bg-ward-surface rounded-xl border-2 border-ward-border shadow-sm p-8">
+            @RenderBody()
+        </div>
+    </main>
+</body>
+</html>

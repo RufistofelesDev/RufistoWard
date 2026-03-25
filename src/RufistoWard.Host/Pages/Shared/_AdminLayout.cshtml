@@ -1,0 +1,77 @@
+@{
+    Layout = null;
+    var currentPath = Context.Request.Path.Value?.TrimEnd('/') ?? "";
+    bool IsActive(string path) => currentPath.Equals(path, StringComparison.OrdinalIgnoreCase)
+        || (path != "/admin" && currentPath.StartsWith(path, StringComparison.OrdinalIgnoreCase));
+    string NavClass(string path) => IsActive(path)
+        ? "flex items-center gap-3 px-3 py-2 rounded-lg bg-ward-indigo-600 text-white font-medium shadow-sm"
+        : "flex items-center gap-3 px-3 py-2 rounded-lg text-ward-chrome-text hover:bg-ward-chrome transition-colors";
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] — RufistoWard Admin</title>
+    <link rel="stylesheet" href="/css/site.css" />
+    <script src="/js/htmx.min.js"></script>
+</head>
+<body class="bg-ward-surface-alt text-ward-text font-body">
+    <div class="flex min-h-screen">
+        <!-- Sidebar -->
+        <nav class="w-64 bg-ward-chrome-dark flex-shrink-0 hidden lg:flex flex-col" aria-label="Admin navigation" data-testid="sidebar">
+            <div class="p-4 border-b border-ward-chrome-border">
+                <h1 class="text-xl font-heading font-bold text-white">RufistoWard</h1>
+                <span class="text-xs text-amber-400 font-medium">Identity Server</span>
+            </div>
+            <ul class="flex-1 p-2 space-y-1">
+                <li>
+                    <a href="/admin" class="@NavClass("/admin")"
+                       data-testid="nav-dashboard" @(IsActive("/admin") ? "aria-current=\"page\"" : "")>
+                        Dashboard
+                    </a>
+                </li>
+                <li>
+                    <a href="/admin/apps" class="@NavClass("/admin/apps")"
+                       data-testid="nav-apps" @(IsActive("/admin/apps") ? "aria-current=\"page\"" : "")>
+                        Apps
+                    </a>
+                </li>
+                <li>
+                    <a href="/admin/scopes" class="@NavClass("/admin/scopes")"
+                       data-testid="nav-scopes" @(IsActive("/admin/scopes") ? "aria-current=\"page\"" : "")>
+                        Scopes
+                    </a>
+                </li>
+                <li>
+                    <a href="/admin/users" class="@NavClass("/admin/users")"
+                       data-testid="nav-users" @(IsActive("/admin/users") ? "aria-current=\"page\"" : "")>
+                        Users
+                    </a>
+                </li>
+                <li>
+                    <a href="/admin/roles" class="@NavClass("/admin/roles")"
+                       data-testid="nav-roles" @(IsActive("/admin/roles") ? "aria-current=\"page\"" : "")>
+                        Roles
+                    </a>
+                </li>
+            </ul>
+            <div class="p-4 border-t border-ward-chrome-border text-xs text-ward-chrome-text" data-testid="sidebar-footer">
+                RufistoWard v1.0
+            </div>
+        </nav>
+
+        <!-- Main content -->
+        <main class="flex-1 p-8" data-testid="main-content">
+            <div class="max-w-5xl mx-auto">
+                @RenderBody()
+            </div>
+        </main>
+    </div>
+
+    <!-- Toast container for HTMX-triggered notifications -->
+    <div id="toast-container" aria-live="polite" class="fixed top-4 right-4 z-50 space-y-2"></div>
+
+    <script src="/js/ward-admin.js"></script>
+</body>
+</html>

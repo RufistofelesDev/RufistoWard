@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <RootNamespace>RufistoWard.Core</RootNamespace>
+    <TailwindCliWindows>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\..\tools\tailwindcss.exe'))</TailwindCliWindows>
+    <TailwindCliLinux>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\..\tools\tailwindcss'))</TailwindCliLinux>
+    <TailwindCli Condition="Exists('$(TailwindCliWindows)')">$(TailwindCliWindows)</TailwindCli>
+    <TailwindCli Condition="'$(TailwindCli)' == '' AND Exists('$(TailwindCliLinux)')">$(TailwindCliLinux)</TailwindCli>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" />
+    <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\RufistoWard.Application\RufistoWard.Application.csproj" />
+    <ProjectReference Include="..\RufistoWard.Infrastructure\RufistoWard.Infrastructure.csproj" />
+  </ItemGroup>
+
+  <Target Name="BuildTailwindCss" BeforeTargets="Build" Condition="Exists('$(TailwindCli)')">
+    <Exec Command="&quot;$(TailwindCli)&quot; -i tailwind.css -o wwwroot/css/site.css --minify" WorkingDirectory="$(MSBuildProjectDirectory)" />
+  </Target>
+
+</Project>

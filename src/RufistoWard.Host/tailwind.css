@@ -1,0 +1,133 @@
+@import "tailwindcss";
+
+/* ============================================================
+   Self-hosted fonts — no external CDN requests
+   ============================================================ */
+
+/* Plus Jakarta Sans — Headings (600, 700) */
+@font-face {
+  font-family: 'Plus Jakarta Sans';
+  font-style: normal;
+  font-weight: 600 700;
+  font-display: swap;
+  src: url('/fonts/plus-jakarta-sans-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'Plus Jakarta Sans';
+  font-style: normal;
+  font-weight: 600 700;
+  font-display: swap;
+  src: url('/fonts/plus-jakarta-sans-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+/* Inter — Body text (400, 500, 600) */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 400 600;
+  font-display: swap;
+  src: url('/fonts/inter-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 400 600;
+  font-display: swap;
+  src: url('/fonts/inter-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+/* JetBrains Mono — Technical identifiers (400, 500) */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 400 500;
+  font-display: swap;
+  src: url('/fonts/jetbrains-mono-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 400 500;
+  font-display: swap;
+  src: url('/fonts/jetbrains-mono-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+/* ============================================================
+   Bold Ward Design Tokens
+   ============================================================ */
+
+@theme {
+  /* Typography */
+  --font-heading: 'Plus Jakarta Sans', system-ui, sans-serif;
+  --font-body: 'Inter', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+
+  /* Primary Palette — "The Ward" */
+  --color-ward-primary: #4f46e5;        /* indigo-700 — nav active, primary buttons, links, focus rings */
+  --color-ward-primary-light: #eef2ff;  /* indigo-50 — selected row bg, hover states, stat card bg */
+  --color-ward-accent: #f59e0b;         /* amber-500 — CTA buttons, important badges */
+  --color-ward-accent-hover: #d97706;   /* amber-600 — CTA hover */
+  --color-ward-accent-light: #fffbeb;   /* amber-50 — CTA hover bg, highlights */
+
+  /* Neutral Palette — "The Frame" */
+  --color-ward-chrome-dark: #0f172a;    /* slate-900 — sidebar bg */
+  --color-ward-chrome: #1e293b;         /* slate-800 — sidebar hover */
+  --color-ward-chrome-border: #334155;  /* slate-700 — sidebar dividers */
+  --color-ward-chrome-text: #cbd5e1;    /* slate-300 — sidebar labels */
+  --color-ward-surface: #ffffff;        /* white — content bg, cards */
+  --color-ward-surface-alt: #f8fafc;    /* slate-50 — page bg */
+  --color-ward-border: #e2e8f0;        /* slate-200 — card borders, dividers, input borders */
+  --color-ward-muted: #64748b;         /* slate-500 — secondary text, help text */
+  --color-ward-text: #1e293b;          /* slate-800 — primary body text */
+
+  /* State Palette */
+  --color-ward-success: #10b981;        /* emerald-500 — active, healthy */
+  --color-ward-success-light: #d1fae5;  /* emerald-100 — success badge bg */
+  --color-ward-success-text: #047857;   /* emerald-700 — success badge text */
+  --color-ward-error: #ef4444;          /* red-500 — failed, locked */
+  --color-ward-error-light: #fee2e2;    /* red-100 — error badge bg */
+  --color-ward-error-text: #b91c1c;     /* red-700 — error badge text */
+  --color-ward-warning: #f59e0b;        /* amber-500 — expiring, attention */
+  --color-ward-warning-light: #fef3c7;  /* amber-100 — warning badge bg */
+  --color-ward-warning-text: #92400e;   /* amber-700 — warning badge text */
+  --color-ward-info: #3b82f6;           /* blue-500 — pending, informational */
+  --color-ward-info-light: #dbeafe;     /* blue-100 — info badge bg */
+  --color-ward-info-text: #1d4ed8;      /* blue-700 — info badge text */
+  --color-ward-inactive: #94a3b8;       /* slate-400 — disabled, archived */
+  --color-ward-inactive-light: #f1f5f9; /* slate-100 — inactive badge bg */
+  --color-ward-inactive-text: #475569;  /* slate-600 — inactive badge text */
+
+  /* Indigo tokens for dashboard stat cards (Bold Ward) */
+  --color-ward-indigo-50: #eef2ff;
+  --color-ward-indigo-100: #e0e7ff;
+  --color-ward-indigo-400: #818cf8;
+  --color-ward-indigo-600: #4f46e5;
+  --color-ward-indigo-700: #4338ca;
+  --color-ward-indigo-900: #312e81;
+}
+
+/* ============================================================
+   Base layer — reduced motion, focus rings
+   ============================================================ */
+
+@layer base {
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-ward-primary);
+    outline-offset: 2px;
+  }
+}

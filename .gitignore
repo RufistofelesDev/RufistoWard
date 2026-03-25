@@ -1,0 +1,57 @@
+# .NET
+bin/
+obj/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Visual Studio
+.vs/
+*.rsuser
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+
+# NuGet
+*.nupkg
+**/[Pp]ackages/*
+!**/[Pp]ackages/build/
+
+# Build results
+[Bb]uild[Ll]og.*
+*.log
+
+# Test results
+TestResults/
+
+# Generated files
+src/RufistoWard.Host/wwwroot/css/site.css
+
+# Tailwind CLI binary
+tools/
+
+# JetBrains Rider
+.idea/
+*.sln.iml
+
+# Claude / AI tooling
+.claude/
+.opencode/
+.tmp/
+
+# BMAD workflow artifacts
+_bmad/
+_bmad-output/
+
+# GitHub workflows (managed separately)
+.github/
+
+# macOS
+.DS_Store
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini

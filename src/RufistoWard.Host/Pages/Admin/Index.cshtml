@@ -1,0 +1,27 @@
+@page "/admin"
+@model RufistoWard.Core.Pages.Admin.IndexModel
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Dashboard";
+}
+
+<h2 class="text-3xl font-heading font-bold text-ward-text mb-8" data-testid="dashboard-title">Dashboard</h2>
+
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6" data-testid="dashboard-cards">
+    <a href="/admin/apps" class="block p-5 bg-ward-indigo-50 border border-ward-indigo-100 rounded-lg hover:shadow-md transition" data-testid="card-apps">
+        <div class="text-sm text-ward-indigo-400 font-medium">Apps</div>
+        <div class="text-3xl font-heading font-bold text-ward-indigo-900 mt-1">@Model.ClientCount</div>
+    </a>
+    <a href="/admin/scopes" class="block p-5 bg-ward-indigo-50 border border-ward-indigo-100 rounded-lg hover:shadow-md transition" data-testid="card-scopes">
+        <div class="text-sm text-ward-indigo-400 font-medium">Scopes</div>
+        <div class="text-3xl font-heading font-bold text-ward-indigo-900 mt-1">@Model.ScopeCount</div>
+    </a>
+    <a href="/admin/users" class="block p-5 bg-ward-indigo-50 border border-ward-indigo-100 rounded-lg hover:shadow-md transition" data-testid="card-users">
+        <div class="text-sm text-ward-indigo-400 font-medium">Users</div>
+        <div class="text-3xl font-heading font-bold text-ward-indigo-900 mt-1">@Model.UserCount</div>
+    </a>
+    <a href="/admin/roles" class="block p-5 bg-ward-indigo-50 border border-ward-indigo-100 rounded-lg hover:shadow-md transition" data-testid="card-roles">
+        <div class="text-sm text-ward-indigo-400 font-medium">Roles</div>
+        <div class="text-3xl font-heading font-bold text-ward-indigo-900 mt-1">@Model.RoleCount</div>
+    </a>
+</div>

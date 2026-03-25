@@ -1,0 +1,91 @@
+namespace RufistoWard.Core.Endpoints.Admin;
+
+using Microsoft.EntityFrameworkCore;
+using RufistoWard.Auth.Admin.Clients;
+using RufistoWard.Auth.Admin.Common;
+using RufistoWard.Identity.Interfaces;
+using RufistoWard.Tokens.Persistence;
+
+public static class ClientAdminEndpoints
+{
+    public static IEndpointRouteBuilder MapClientAdminEndpoints(this IEndpointRouteBuilder endpoints)
+    {
+        var group = endpoints.MapGroup("/api/admin/clients");
+
+        group.MapGet("/", async (
+            RufistoWardDbContext db,
+            int page = 1, int pageSize = 25, string? search = null,
+            CancellationToken cancellationToken = default) =>
+        {
+            var query = db.Clients
+                .Include(c => c.Scopes)
+                .Include(c => c.GrantTypes)
+                .Include(c => c.RedirectUris)
+                .AsQueryable();
+
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                query = query.Where(c => c.ClientName.Contains(search) || c.ClientId.Contains(search));
+            }
+
+            var totalCount = await query.CountAsync(cancellationToken);
+            var items = await query
+                .OrderBy(c => c.ClientName)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .Select(c => new ClientResponse
+                {
+                    Id = c.Id,
+                    ClientId = c.ClientId,
+                    ClientName = c.ClientName,
+                    Enabled = c.Enabled,
+                    GrantTypes = c.GrantTypes.Select(g => g.GrantType).ToArray(),
+                    RedirectUris = c.RedirectUris.Select(r => r.Uri).ToArray(),
+                    AllowedScopes = c.Scopes.Select(s => s.Scope).ToArray(),
+                })
+                .ToListAsync(cancellationToken);
+
+            return Results.Ok(new PagedResult<ClientResponse>
+            {
+                Items = items,
+                TotalCount = totalCount,
+                Page = page,
+                PageSize = pageSize,
+            });
+        });
+
+        group.MapGet("/{clientId}", async (
+            string clientId,
+            IClientRepository repo,
+            CancellationToken cancellationToken) =>
+        {
+            var client = await repo.FindByClientIdAsync(clientId, cancellationToken);
+            if (client is null) return Results.NotFound();
+
+            return Results.Ok(new ClientResponse
+            {
+                Id = client.Id,
+                ClientId = client.ClientId,
+                ClientName = client.ClientName,
+                Enabled = client.Enabled,
+                GrantTypes = client.GrantTypes.Select(g => g.GrantType).ToArray(),
+                RedirectUris = client.RedirectUris.Select(r => r.Uri).ToArray(),
+                AllowedScopes = client.Scopes.Select(s => s.Scope).ToArray(),
+            });
+        });
+
+        group.MapDelete("/{clientId}", async (
+            string clientId,
+            IClientRepository repo,
+            CancellationToken cancellationToken) =>
+        {
+            var client = await repo.FindByClientIdAsync(clientId, cancellationToken);
+            if (client is null) return Results.NotFound();
+
+            await repo.DeleteAsync(client, cancellationToken);
+            return Results.NoContent();
+        });
+
+        return endpoints;
+    }
+}

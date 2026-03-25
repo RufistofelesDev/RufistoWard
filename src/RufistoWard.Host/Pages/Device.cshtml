@@ -1,0 +1,48 @@
+@page
+@model RufistoWard.Core.Pages.DeviceModel
+@{
+    Layout = "_LoginLayout";
+    ViewData["Title"] = "Device Authorization";
+    ViewData["Subtitle"] = "Authorize your device to access your account.";
+}
+
+@if (!string.IsNullOrEmpty(Model.Message))
+{
+    <div data-testid="message"
+         class="mb-6 rounded-lg bg-ward-success-light border border-ward-success/20 px-4 py-3 text-sm text-ward-success-text">
+        @Model.Message
+    </div>
+}
+
+@if (!string.IsNullOrEmpty(Model.ErrorMessage))
+{
+    <div data-testid="error-message" role="alert"
+         class="mb-6 rounded-lg bg-ward-error-light border border-ward-error/20 px-4 py-3 text-sm text-ward-error-text">
+        @Model.ErrorMessage
+    </div>
+}
+
+@if (!Model.IsComplete)
+{
+    <form method="post" data-testid="device-form" class="space-y-5">
+        <div>
+            <label for="user_code" class="block text-sm font-medium text-ward-text mb-1">
+                Enter the code displayed on your device
+            </label>
+            <input type="text" id="user_code" name="UserCode" value="@Model.UserCode"
+                   data-testid="user-code-input"
+                   required
+                   placeholder="ABCD-1234"
+                   autocomplete="off"
+                   class="w-full border-2 border-ward-border rounded-xl px-4 py-3 text-sm font-mono tracking-wider text-center
+                          placeholder:text-ward-inactive
+                          focus-visible:ring-2 focus-visible:ring-ward-primary focus-visible:border-ward-primary outline-none" />
+        </div>
+
+        <button type="submit" data-testid="authorize-button"
+                class="w-full bg-ward-indigo-600 hover:bg-ward-indigo-700 text-white font-semibold
+                       rounded-xl px-6 py-3 text-sm shadow-sm transition-colors">
+            Authorize
+        </button>
+    </form>
+}
