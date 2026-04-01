@@ -3,6 +3,7 @@ namespace RufistoWard.Core.Bootstrap;
 using RufistoWard.Auth.Protocol.Authorization;
 using RufistoWard.Auth.Protocol.Device;
 using RufistoWard.Auth.Protocol.Token;
+using RufistoWard.Auth.Protocol.UserInfo;
 using RufistoWard.Auth.Protocol.Validation;
 using RufistoWard.Identity.Interfaces;
 using RufistoWard.Tokens.Persistence.Repositories;
@@ -30,6 +31,10 @@ public static class ProtocolServiceExtensions
 
         // Token building
         services.AddScoped<ITokenBuilder, JwtTokenBuilder>();
+
+        // UserInfo
+        services.AddScoped<IAccessTokenValidator, AccessTokenValidator>();
+        services.AddScoped<IUserInfoHandler, UserInfoHandler>();
 
         // Token request handlers (registered as IEnumerable<ITokenRequestHandler>)
         services.AddScoped<ITokenRequestHandler, AuthorizationCodeTokenHandler>();

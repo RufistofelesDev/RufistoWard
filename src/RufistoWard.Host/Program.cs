@@ -56,12 +56,15 @@ app.MapAuthorizeEndpoints();
 app.MapDeviceEndpoints();
 app.MapRevocationEndpoints();
 app.MapIntrospectionEndpoints();
+app.MapUserInfoEndpoints();
 app.MapEndSessionEndpoints();
 app.MapClientAdminEndpoints();
 app.MapScopeAdminEndpoints();
 app.MapUserAdminEndpoints();
 app.MapRoleAdminEndpoints();
 app.MapRazorPages();
+
+app.MapGet("/", () => Results.Redirect("/login"));
 
 app.MapHealthChecks("/health", new HealthCheckOptions
 {

@@ -9,6 +9,11 @@ public sealed class UserRepository(RufistoWardDbContext context) : IUserReposito
     public async Task<User?> FindBySubjectIdAsync(string subjectId, CancellationToken cancellationToken = default)
         => await context.Users.FirstOrDefaultAsync(u => u.SubjectId == subjectId, cancellationToken);
 
+    public async Task<User?> FindBySubjectIdWithClaimsAsync(string subjectId, CancellationToken cancellationToken = default)
+        => await context.Users
+            .Include(u => u.Claims)
+            .FirstOrDefaultAsync(u => u.SubjectId == subjectId, cancellationToken);
+
     public async Task<User?> FindByUsernameAsync(string username, CancellationToken cancellationToken = default)
         => await context.Users.FirstOrDefaultAsync(u => u.Username == username, cancellationToken);
 

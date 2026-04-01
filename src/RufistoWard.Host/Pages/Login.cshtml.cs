@@ -47,6 +47,6 @@ public sealed class LoginModel(LoginHandler loginHandler) : PageModel
             return Redirect(ReturnUrl);
         }
 
-        return RedirectToPage("/Login");
+        return Redirect("/admin");
     }
 }
