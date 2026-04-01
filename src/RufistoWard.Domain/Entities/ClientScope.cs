@@ -7,4 +7,9 @@ public sealed class ClientScope
     public string Scope { get; private set; } = default!;
 
     private ClientScope() { }
+
+    internal ClientScope(string scope)
+    {
+        Scope = scope;
+    }
 }

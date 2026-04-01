@@ -48,6 +48,9 @@ public static class InfrastructureServiceExtensions
         });
 
         services.AddScoped<IClientRepository, ClientRepository>();
+        services.AddScoped<IRoleRepository, RoleRepository>();
+        services.AddScoped<IScopeRepository, ScopeRepository>();
+        services.AddScoped<IResourceRepository, ResourceRepository>();
         services.AddScoped<ISigningKeyRepository, SigningKeyRepository>();
 
         return services;

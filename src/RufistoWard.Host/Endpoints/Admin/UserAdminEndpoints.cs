@@ -2,6 +2,8 @@ namespace RufistoWard.Core.Endpoints.Admin;
 
 using Microsoft.EntityFrameworkCore;
 using RufistoWard.Auth.Admin.Common;
+using RufistoWard.Auth.Admin.Users;
+using RufistoWard.Identity.Entities;
 using RufistoWard.Identity.Interfaces;
 using RufistoWard.Tokens.Persistence;
 
@@ -37,12 +39,16 @@ public static class UserAdminEndpoints
                 .OrderBy(u => u.Username)
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
-                .Select(u => new { u.Id, u.SubjectId, u.Username, u.Email, u.IsActive, u.CreatedAt })
+                .Select(u => new UserResponse
+                {
+                    Id = u.Id, SubjectId = u.SubjectId, Username = u.Username,
+                    Email = u.Email, IsActive = u.IsActive, CreatedAt = u.CreatedAt,
+                })
                 .ToListAsync(cancellationToken);
 
-            return Results.Ok(new PagedResult<object>
+            return Results.Ok(new PagedResult<UserResponse>
             {
-                Items = items.Cast<object>().ToList(),
+                Items = items,
                 TotalCount = totalCount,
                 Page = page,
                 PageSize = pageSize,
@@ -53,8 +59,74 @@ public static class UserAdminEndpoints
             string subjectId, IUserRepository repo, CancellationToken ct) =>
         {
             var user = await repo.FindBySubjectIdAsync(subjectId, ct);
-            return user is null ? Results.NotFound() :
-                Results.Ok(new { user.Id, user.SubjectId, user.Username, user.Email, user.IsActive, user.CreatedAt });
+            if (user is null) return Results.NotFound();
+            return Results.Ok(new UserResponse
+            {
+                Id = user.Id, SubjectId = user.SubjectId, Username = user.Username,
+                Email = user.Email, IsActive = user.IsActive, CreatedAt = user.CreatedAt,
+            });
+        });
+
+        group.MapPost("/", async (
+            CreateUserRequest request,
+            IUserRepository repo,
+            IPasswordHasher passwordHasher,
+            CancellationToken ct) =>
+        {
+            var existingByUsername = await repo.FindByUsernameAsync(request.Username, ct);
+            if (existingByUsername is not null)
+            {
+                return Results.Conflict(new
+                {
+                    type = "https://tools.ietf.org/html/rfc9457",
+                    title = "Username already exists",
+                    detail = $"A user with username '{request.Username}' already exists.",
+                    status = 409,
+                });
+            }
+
+            var existingByEmail = await repo.FindByEmailAsync(request.Email, ct);
+            if (existingByEmail is not null)
+            {
+                return Results.Conflict(new
+                {
+                    type = "https://tools.ietf.org/html/rfc9457",
+                    title = "Email already exists",
+                    detail = $"A user with email '{request.Email}' already exists.",
+                    status = 409,
+                });
+            }
+
+            var subjectId = Guid.NewGuid().ToString();
+            var hash = passwordHasher.Hash(request.Password);
+            var user = User.Create(subjectId, request.Username, request.Email, hash);
+
+            await repo.AddAsync(user, ct);
+
+            return Results.Created($"/api/admin/users/{subjectId}", new UserResponse
+            {
+                Id = user.Id, SubjectId = user.SubjectId, Username = user.Username,
+                Email = user.Email, IsActive = user.IsActive, CreatedAt = user.CreatedAt,
+            });
+        });
+
+        group.MapPut("/{subjectId}", async (
+            string subjectId,
+            UpdateUserRequest request,
+            IUserRepository repo,
+            CancellationToken ct) =>
+        {
+            var user = await repo.FindBySubjectIdAsync(subjectId, ct);
+            if (user is null) return Results.NotFound();
+
+            user.Update(request.Username, request.Email, request.EmailConfirmed);
+            await repo.UpdateAsync(user, ct);
+
+            return Results.Ok(new UserResponse
+            {
+                Id = user.Id, SubjectId = user.SubjectId, Username = user.Username,
+                Email = user.Email, IsActive = user.IsActive, CreatedAt = user.CreatedAt,
+            });
         });
 
         group.MapPost("/{subjectId}/deactivate", async (
@@ -62,10 +134,15 @@ public static class UserAdminEndpoints
         {
             var user = await repo.FindBySubjectIdAsync(subjectId, ct);
             if (user is null) return Results.NotFound();
-            // Deactivate by recording failed login that exceeds threshold (reuse existing method)
-            // Actually we need a Deactivate method — for now use the IsActive flag
-            // This is a simplification; proper implementation would add a Deactivate() method
-            return Results.Ok(new { message = "User deactivated." });
+
+            user.Deactivate();
+            await repo.UpdateAsync(user, ct);
+
+            return Results.Ok(new UserResponse
+            {
+                Id = user.Id, SubjectId = user.SubjectId, Username = user.Username,
+                Email = user.Email, IsActive = user.IsActive, CreatedAt = user.CreatedAt,
+            });
         });
 
         group.MapPost("/{subjectId}/activate", async (
@@ -73,7 +150,15 @@ public static class UserAdminEndpoints
         {
             var user = await repo.FindBySubjectIdAsync(subjectId, ct);
             if (user is null) return Results.NotFound();
-            return Results.Ok(new { message = "User activated." });
+
+            user.Activate();
+            await repo.UpdateAsync(user, ct);
+
+            return Results.Ok(new UserResponse
+            {
+                Id = user.Id, SubjectId = user.SubjectId, Username = user.Username,
+                Email = user.Email, IsActive = user.IsActive, CreatedAt = user.CreatedAt,
+            });
         });
 
         return endpoints;

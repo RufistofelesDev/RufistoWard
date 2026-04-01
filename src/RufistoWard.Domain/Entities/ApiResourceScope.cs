@@ -7,4 +7,9 @@ public sealed class ApiResourceScope
     public string Scope { get; private set; } = default!;
 
     private ApiResourceScope() { }
+
+    internal ApiResourceScope(string scope)
+    {
+        Scope = scope;
+    }
 }

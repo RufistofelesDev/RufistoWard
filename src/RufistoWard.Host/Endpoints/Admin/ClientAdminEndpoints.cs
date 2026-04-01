@@ -3,6 +3,7 @@ namespace RufistoWard.Core.Endpoints.Admin;
 using Microsoft.EntityFrameworkCore;
 using RufistoWard.Auth.Admin.Clients;
 using RufistoWard.Auth.Admin.Common;
+using RufistoWard.Identity.Entities;
 using RufistoWard.Identity.Interfaces;
 using RufistoWard.Tokens.Persistence;
 
@@ -61,6 +62,68 @@ public static class ClientAdminEndpoints
         {
             var client = await repo.FindByClientIdAsync(clientId, cancellationToken);
             if (client is null) return Results.NotFound();
+
+            return Results.Ok(new ClientResponse
+            {
+                Id = client.Id,
+                ClientId = client.ClientId,
+                ClientName = client.ClientName,
+                Enabled = client.Enabled,
+                GrantTypes = client.GrantTypes.Select(g => g.GrantType).ToArray(),
+                RedirectUris = client.RedirectUris.Select(r => r.Uri).ToArray(),
+                AllowedScopes = client.Scopes.Select(s => s.Scope).ToArray(),
+            });
+        });
+
+        group.MapPost("/", async (
+            CreateClientRequest request,
+            IClientRepository repo,
+            CancellationToken cancellationToken) =>
+        {
+            var clientId = Guid.NewGuid().ToString("N")[..16];
+            var client = Client.Create(clientId, request.ClientName, request.RequireClientSecret);
+
+            foreach (var gt in request.GrantTypes) client.AddGrantType(gt);
+            foreach (var uri in request.RedirectUris) client.AddRedirectUri(uri);
+            foreach (var scope in request.AllowedScopes) client.AddScope(scope);
+
+            string? plainSecret = null;
+            if (request.RequireClientSecret)
+            {
+                plainSecret = Guid.NewGuid().ToString("N");
+                client.AddSecret(Convert.ToBase64String(
+                    System.Security.Cryptography.SHA256.HashData(
+                        System.Text.Encoding.UTF8.GetBytes(plainSecret))));
+            }
+
+            await repo.AddAsync(client, cancellationToken);
+
+            return Results.Created($"/api/admin/clients/{clientId}", new ClientResponse
+            {
+                Id = client.Id,
+                ClientId = client.ClientId,
+                ClientName = client.ClientName,
+                Enabled = client.Enabled,
+                GrantTypes = client.GrantTypes.Select(g => g.GrantType).ToArray(),
+                RedirectUris = client.RedirectUris.Select(r => r.Uri).ToArray(),
+                AllowedScopes = client.Scopes.Select(s => s.Scope).ToArray(),
+                ClientSecret = plainSecret,
+            });
+        });
+
+        group.MapPut("/{clientId}", async (
+            string clientId,
+            UpdateClientRequest request,
+            IClientRepository repo,
+            CancellationToken cancellationToken) =>
+        {
+            var client = await repo.FindByClientIdAsync(clientId, cancellationToken);
+            if (client is null) return Results.NotFound();
+
+            client.Update(request.ClientName, request.Enabled, request.RequirePkce,
+                request.AccessTokenLifetimeSeconds, request.RefreshTokenLifetimeSeconds);
+
+            await repo.UpdateAsync(client, cancellationToken);
 
             return Results.Ok(new ClientResponse
             {

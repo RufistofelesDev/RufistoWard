@@ -11,4 +11,18 @@ public sealed class ApiScope
     public bool Emphasize { get; private set; }
 
     private ApiScope() { }
+
+    public static ApiScope Create(string name, string? displayName = null, string? description = null)
+    {
+        return new ApiScope { Name = name, DisplayName = displayName, Description = description };
+    }
+
+    public void Update(string? displayName, string? description, bool? enabled, bool? required, bool? emphasize)
+    {
+        if (displayName is not null) DisplayName = displayName;
+        if (description is not null) Description = description;
+        if (enabled.HasValue) Enabled = enabled.Value;
+        if (required.HasValue) Required = required.Value;
+        if (emphasize.HasValue) Emphasize = emphasize.Value;
+    }
 }

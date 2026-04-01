@@ -7,4 +7,9 @@ public sealed class ClientRedirectUri
     public string Uri { get; private set; } = default!;
 
     private ClientRedirectUri() { }
+
+    internal ClientRedirectUri(string uri)
+    {
+        Uri = uri;
+    }
 }

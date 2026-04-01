@@ -27,4 +27,48 @@ public sealed class Client
     public IReadOnlyCollection<ClientGrantType> GrantTypes => _grantTypes.AsReadOnly();
 
     private Client() { }
+
+    public static Client Create(string clientId, string clientName, bool requireClientSecret = true)
+    {
+        return new Client
+        {
+            ClientId = clientId,
+            ClientName = clientName,
+            RequireClientSecret = requireClientSecret,
+            CreatedAt = DateTime.UtcNow,
+        };
+    }
+
+    public void Update(string? clientName, bool? enabled, bool? requirePkce, int? accessTokenLifetimeSeconds, int? refreshTokenLifetimeSeconds)
+    {
+        if (clientName is not null) ClientName = clientName;
+        if (enabled.HasValue) Enabled = enabled.Value;
+        if (requirePkce.HasValue) RequirePkce = requirePkce.Value;
+        if (accessTokenLifetimeSeconds.HasValue) AccessTokenLifetimeSeconds = accessTokenLifetimeSeconds.Value;
+        if (refreshTokenLifetimeSeconds.HasValue) RefreshTokenLifetimeSeconds = refreshTokenLifetimeSeconds.Value;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    public void AddSecret(string hashedValue, string? description = null, DateTime? expiration = null)
+    {
+        _secrets.Add(new ClientSecret(hashedValue, description, expiration));
+    }
+
+    public void AddScope(string scope)
+    {
+        if (_scopes.All(s => s.Scope != scope))
+            _scopes.Add(new ClientScope(scope));
+    }
+
+    public void AddRedirectUri(string uri)
+    {
+        if (_redirectUris.All(r => r.Uri != uri))
+            _redirectUris.Add(new ClientRedirectUri(uri));
+    }
+
+    public void AddGrantType(string grantType)
+    {
+        if (_grantTypes.All(g => g.GrantType != grantType))
+            _grantTypes.Add(new ClientGrantType(grantType));
+    }
 }

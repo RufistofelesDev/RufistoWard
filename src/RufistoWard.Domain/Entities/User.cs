@@ -50,4 +50,38 @@ public sealed class User
         LockoutEnd = null;
         UpdatedAt = DateTime.UtcNow;
     }
+
+    public void Update(string? username, string? email, bool? emailConfirmed)
+    {
+        if (username is not null) Username = username;
+        if (email is not null) Email = email.ToLowerInvariant();
+        if (emailConfirmed.HasValue) EmailConfirmed = emailConfirmed.Value;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    public void Activate()
+    {
+        IsActive = true;
+        FailedLoginCount = 0;
+        LockoutEnd = null;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    public void Deactivate()
+    {
+        IsActive = false;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    public void AssignRole(int roleId)
+    {
+        if (_roles.All(r => r.RoleId != roleId))
+            _roles.Add(new UserRole(roleId));
+    }
+
+    public void RemoveRole(int roleId)
+    {
+        var existing = _roles.FirstOrDefault(r => r.RoleId == roleId);
+        if (existing is not null) _roles.Remove(existing);
+    }
 }

@@ -10,4 +10,12 @@ public sealed class ClientSecret
     public DateTime CreatedAt { get; private set; }
 
     private ClientSecret() { }
+
+    internal ClientSecret(string value, string? description, DateTime? expiration)
+    {
+        Value = value;
+        Description = description;
+        Expiration = expiration;
+        CreatedAt = DateTime.UtcNow;
+    }
 }

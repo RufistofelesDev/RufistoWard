@@ -6,4 +6,9 @@ public sealed class UserRole
     public int RoleId { get; private set; }
 
     private UserRole() { }
+
+    internal UserRole(int roleId)
+    {
+        RoleId = roleId;
+    }
 }

@@ -7,4 +7,9 @@ public sealed class RolePermission
     public string Permission { get; private set; } = default!;
 
     private RolePermission() { }
+
+    internal RolePermission(string permission)
+    {
+        Permission = permission;
+    }
 }

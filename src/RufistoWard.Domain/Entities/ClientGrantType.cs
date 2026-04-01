@@ -7,4 +7,9 @@ public sealed class ClientGrantType
     public string GrantType { get; private set; } = default!;
 
     private ClientGrantType() { }
+
+    internal ClientGrantType(string grantType)
+    {
+        GrantType = grantType;
+    }
 }
