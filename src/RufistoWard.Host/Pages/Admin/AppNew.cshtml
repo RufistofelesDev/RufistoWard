@@ -1,0 +1,66 @@
+@page "/admin/apps/new"
+@model RufistoWard.Core.Pages.Admin.AppNewModel
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Register App";
+}
+
+<rw-breadcrumb items="Dashboard|/admin;Apps|/admin/apps;Register App"></rw-breadcrumb>
+
+<h2 class="text-3xl font-heading font-bold text-ward-text mb-8">Register App</h2>
+
+@if (!string.IsNullOrEmpty(Model.CreatedSecret))
+{
+    <div class="mb-6 p-4 bg-amber-50 border-2 border-amber-300 rounded-xl">
+        <p class="font-medium text-amber-800 mb-2">Client Secret (copy now — it won't be shown again)</p>
+        <code class="block p-3 bg-white border border-amber-200 rounded-lg font-mono text-sm select-all">@Model.CreatedSecret</code>
+        <p class="text-sm text-ward-muted mt-2">Client ID: <code class="font-mono">@Model.CreatedClientId</code></p>
+    </div>
+}
+
+@if (!string.IsNullOrEmpty(Model.ErrorMessage))
+{
+    <rw-toast type="error" message="@Model.ErrorMessage"></rw-toast>
+}
+
+<form method="post" class="bg-ward-surface border border-ward-border rounded-xl p-6 space-y-4">
+    <rw-form-field label="App Name" name="clientName" value="@Model.ClientName" required="true"
+                   help="A friendly name for this application."></rw-form-field>
+
+    <div>
+        <label class="block text-sm font-medium text-ward-text mb-1">Grant Types</label>
+        <div class="space-y-2">
+            @foreach (var gt in new[] { "authorization_code", "client_credentials", "refresh_token", "urn:ietf:params:oauth:grant-type:device_code" })
+            {
+                <label class="flex items-center gap-2 text-sm">
+                    <input type="checkbox" name="grantTypes" value="@gt"
+                           @(Model.SelectedGrantTypes?.Contains(gt) == true ? "checked" : "") />
+                    @gt
+                </label>
+            }
+        </div>
+    </div>
+
+    <rw-form-field label="Redirect URIs" name="redirectUris" value="@Model.RedirectUris"
+                   help="Comma-separated list of allowed redirect URIs."></rw-form-field>
+
+    <rw-form-field label="Allowed Scopes" name="allowedScopes" value="@Model.AllowedScopes"
+                   help="Comma-separated list of scopes (e.g., openid, profile, email)."></rw-form-field>
+
+    <div>
+        <label class="flex items-center gap-2 text-sm">
+            <input type="checkbox" name="requireClientSecret" value="true"
+                   @(Model.RequireClientSecret ? "checked" : "") />
+            Require Client Secret (confidential client)
+        </label>
+    </div>
+
+    <div class="pt-4 flex gap-3">
+        <button type="submit" class="px-4 py-2 bg-ward-accent hover:bg-ward-accent-hover text-white font-medium rounded-lg transition">
+            Register App
+        </button>
+        <a href="/admin/apps" class="px-4 py-2 border border-ward-border text-ward-muted rounded-lg hover:bg-ward-surface-alt transition">
+            Cancel
+        </a>
+    </div>
+</form>

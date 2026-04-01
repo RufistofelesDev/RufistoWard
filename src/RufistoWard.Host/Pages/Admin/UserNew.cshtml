@@ -1,0 +1,24 @@
+@page "/admin/users/new"
+@model RufistoWard.Core.Pages.Admin.UserNewModel
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Add User";
+}
+
+<rw-breadcrumb items="Dashboard|/admin;Users|/admin/users;Add User"></rw-breadcrumb>
+<h2 class="text-3xl font-heading font-bold text-ward-text mb-8">Add User</h2>
+
+@if (!string.IsNullOrEmpty(Model.ErrorMessage))
+{
+    <rw-toast type="error" message="@Model.ErrorMessage"></rw-toast>
+}
+
+<form method="post" class="bg-ward-surface border border-ward-border rounded-xl p-6 space-y-4">
+    <rw-form-field label="Username" name="username" value="@Model.Username" required="true"></rw-form-field>
+    <rw-form-field label="Email" name="email" type="email" value="@Model.Email" required="true"></rw-form-field>
+    <rw-form-field label="Password" name="password" type="password" required="true"></rw-form-field>
+    <div class="pt-4 flex gap-3">
+        <button type="submit" class="px-4 py-2 bg-ward-accent hover:bg-ward-accent-hover text-white font-medium rounded-lg transition">Add User</button>
+        <a href="/admin/users" class="px-4 py-2 border border-ward-border text-ward-muted rounded-lg hover:bg-ward-surface-alt transition">Cancel</a>
+    </div>
+</form>

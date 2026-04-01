@@ -1,0 +1,46 @@
+@page "/admin/scopes/{id:int}"
+@model RufistoWard.Core.Pages.Admin.ScopeDetailModel
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = Model.Scope?.Name ?? "Scope Not Found";
+}
+
+<rw-breadcrumb items="Dashboard|/admin;Scopes|/admin/scopes;@(Model.Scope?.Name ?? "Not Found")"></rw-breadcrumb>
+
+@if (Model.Scope is null)
+{
+    <rw-empty-state message="Scope not found." action-url="/admin/scopes" action-label="Back to Scopes"></rw-empty-state>
+}
+else
+{
+    @if (!string.IsNullOrEmpty(Model.SuccessMessage))
+    {
+        <rw-toast type="success" message="@Model.SuccessMessage"></rw-toast>
+    }
+
+    <div class="flex items-center justify-between mb-8">
+        <h2 class="text-3xl font-heading font-bold text-ward-text">@Model.Scope.Name</h2>
+        <div class="flex items-center gap-3">
+            <rw-status-badge status="@(Model.Scope.Enabled ? "active" : "inactive")"></rw-status-badge>
+            <form method="post" asp-page-handler="Delete" class="inline">
+                <input type="hidden" name="id" value="@Model.Scope.Id" />
+                <button type="submit" onclick="return confirm('Delete this scope?')"
+                        class="px-3 py-1.5 text-sm border border-ward-error text-ward-error rounded-lg hover:bg-red-50 transition">Delete</button>
+            </form>
+        </div>
+    </div>
+
+    <form method="post" asp-page-handler="Update" class="bg-ward-surface border border-ward-border rounded-xl p-6 space-y-4">
+        <input type="hidden" name="id" value="@Model.Scope.Id" />
+        <rw-form-field label="Display Name" name="displayName" value="@Model.Scope.DisplayName"></rw-form-field>
+        <rw-form-field label="Description" name="description" value="@Model.Scope.Description"></rw-form-field>
+        <div class="grid grid-cols-3 gap-4">
+            <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="enabled" value="true" @(Model.Scope.Enabled ? "checked" : "") /> Enabled</label>
+            <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="required" value="true" @(Model.Scope.Required ? "checked" : "") /> Required</label>
+            <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="emphasize" value="true" @(Model.Scope.Emphasize ? "checked" : "") /> Emphasize</label>
+        </div>
+        <div class="pt-4">
+            <button type="submit" class="px-4 py-2 bg-ward-primary text-white font-medium rounded-lg hover:bg-indigo-700 transition">Save Changes</button>
+        </div>
+    </form>
+}

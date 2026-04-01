@@ -1,0 +1,67 @@
+@page "/admin/scopes"
+@model RufistoWard.Core.Pages.Admin.ScopesModel
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Scopes";
+}
+
+<rw-breadcrumb items="Dashboard|/admin;Scopes"></rw-breadcrumb>
+
+<div class="flex items-center justify-between mb-6">
+    <h2 class="text-3xl font-heading font-bold text-ward-text">Scopes</h2>
+    <a href="/admin/scopes/new" class="px-4 py-2 bg-ward-accent hover:bg-ward-accent-hover text-white font-medium rounded-lg transition">
+        + Add Scope
+    </a>
+</div>
+
+<form method="get" class="mb-6">
+    <input type="text" name="search" value="@Model.Search" placeholder="Search scopes..."
+           class="w-full max-w-sm px-3 py-2 border-2 border-ward-border rounded-lg focus:border-ward-primary focus:outline-none" />
+</form>
+
+@if (Model.Items.Count == 0)
+{
+    <rw-empty-state message="No scopes defined yet." action-url="/admin/scopes/new" action-label="Add your first scope"></rw-empty-state>
+}
+else
+{
+    <div class="bg-ward-surface border border-ward-border rounded-xl overflow-hidden">
+        <table class="w-full text-sm">
+            <thead class="bg-ward-surface-alt border-b border-ward-border">
+                <tr>
+                    <th class="text-left px-4 py-3 font-medium text-ward-muted">Name</th>
+                    <th class="text-left px-4 py-3 font-medium text-ward-muted">Display Name</th>
+                    <th class="text-left px-4 py-3 font-medium text-ward-muted">Status</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-ward-border">
+                @foreach (var scope in Model.Items)
+                {
+                    <tr class="hover:bg-ward-primary-light transition-colors cursor-pointer"
+                        onclick="window.location='/admin/scopes/@scope.Id'">
+                        <td class="px-4 py-3 font-medium font-mono text-sm">@scope.Name</td>
+                        <td class="px-4 py-3 text-ward-muted">@(scope.DisplayName ?? "—")</td>
+                        <td class="px-4 py-3"><rw-status-badge status="@(scope.Enabled ? "active" : "inactive")"></rw-status-badge></td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    @if (Model.TotalCount > Model.PageSize)
+    {
+        <div class="flex items-center justify-between mt-4 text-sm text-ward-muted">
+            <span>Showing @((Model.Page - 1) * Model.PageSize + 1)–@Math.Min(Model.Page * Model.PageSize, Model.TotalCount) of @Model.TotalCount</span>
+            <div class="flex gap-2">
+                @if (Model.Page > 1)
+                {
+                    <a href="/admin/scopes?page=@(Model.Page - 1)&search=@Model.Search" class="px-3 py-1 border border-ward-border rounded hover:bg-ward-surface transition">Previous</a>
+                }
+                @if (Model.Page * Model.PageSize < Model.TotalCount)
+                {
+                    <a href="/admin/scopes?page=@(Model.Page + 1)&search=@Model.Search" class="px-3 py-1 border border-ward-border rounded hover:bg-ward-surface transition">Next</a>
+                }
+            </div>
+        </div>
+    }
+}

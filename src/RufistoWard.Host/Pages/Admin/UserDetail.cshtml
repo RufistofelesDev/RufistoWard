@@ -1,0 +1,56 @@
+@page "/admin/users/{subjectId}"
+@model RufistoWard.Core.Pages.Admin.UserDetailModel
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = Model.User?.Username ?? "User Not Found";
+}
+
+<rw-breadcrumb items="Dashboard|/admin;Users|/admin/users;@(Model.User?.Username ?? "Not Found")"></rw-breadcrumb>
+
+@if (Model.User is null)
+{
+    <rw-empty-state message="User not found." action-url="/admin/users" action-label="Back to Users"></rw-empty-state>
+}
+else
+{
+    @if (!string.IsNullOrEmpty(Model.SuccessMessage))
+    {
+        <rw-toast type="success" message="@Model.SuccessMessage"></rw-toast>
+    }
+
+    <div class="flex items-center justify-between mb-8">
+        <div>
+            <h2 class="text-3xl font-heading font-bold text-ward-text">@Model.User.Username</h2>
+            <span class="text-sm text-ward-muted">@Model.User.Email · Subject: <code class="font-mono">@Model.User.SubjectId</code></span>
+        </div>
+        <div class="flex items-center gap-3">
+            <rw-status-badge status="@(Model.User.IsActive ? "active" : "inactive")"></rw-status-badge>
+            @if (Model.User.IsActive)
+            {
+                <form method="post" asp-page-handler="Deactivate" class="inline">
+                    <input type="hidden" name="subjectId" value="@Model.User.SubjectId" />
+                    <button type="submit" class="px-3 py-1.5 text-sm border border-ward-error text-ward-error rounded-lg hover:bg-red-50 transition">Deactivate</button>
+                </form>
+            }
+            else
+            {
+                <form method="post" asp-page-handler="Activate" class="inline">
+                    <input type="hidden" name="subjectId" value="@Model.User.SubjectId" />
+                    <button type="submit" class="px-3 py-1.5 text-sm border border-ward-success text-ward-success rounded-lg hover:bg-emerald-50 transition">Activate</button>
+                </form>
+            }
+        </div>
+    </div>
+
+    <form method="post" asp-page-handler="Update" class="bg-ward-surface border border-ward-border rounded-xl p-6 space-y-4">
+        <input type="hidden" name="subjectId" value="@Model.User.SubjectId" />
+        <rw-form-field label="Username" name="username" value="@Model.User.Username"></rw-form-field>
+        <rw-form-field label="Email" name="email" type="email" value="@Model.User.Email"></rw-form-field>
+        <label class="flex items-center gap-2 text-sm">
+            <input type="checkbox" name="emailConfirmed" value="true" @(Model.User.EmailConfirmed ? "checked" : "") /> Email Confirmed
+        </label>
+        <div class="pt-4">
+            <button type="submit" class="px-4 py-2 bg-ward-primary text-white font-medium rounded-lg hover:bg-indigo-700 transition">Save Changes</button>
+        </div>
+    </form>
+}

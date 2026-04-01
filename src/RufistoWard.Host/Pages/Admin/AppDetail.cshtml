@@ -1,0 +1,93 @@
+@page "/admin/apps/{clientId}"
+@model RufistoWard.Core.Pages.Admin.AppDetailModel
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = Model.App?.ClientName ?? "App Not Found";
+}
+
+<rw-breadcrumb items="Dashboard|/admin;Apps|/admin/apps;@(Model.App?.ClientName ?? "Not Found")"></rw-breadcrumb>
+
+@if (Model.App is null)
+{
+    <rw-empty-state message="App not found." action-url="/admin/apps" action-label="Back to Apps"></rw-empty-state>
+}
+else
+{
+    @if (!string.IsNullOrEmpty(Model.SuccessMessage))
+    {
+        <rw-toast type="success" message="@Model.SuccessMessage"></rw-toast>
+    }
+    @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+    {
+        <rw-toast type="error" message="@Model.ErrorMessage"></rw-toast>
+    }
+
+    <!-- Header -->
+    <div class="flex items-center justify-between mb-8">
+        <div>
+            <h2 class="text-3xl font-heading font-bold text-ward-text">@Model.App.ClientName</h2>
+            <span class="font-mono text-sm text-ward-muted">@Model.App.ClientId</span>
+        </div>
+        <div class="flex items-center gap-3">
+            <rw-status-badge status="@(Model.App.Enabled ? "active" : "inactive")"></rw-status-badge>
+            <form method="post" asp-page-handler="Delete" class="inline">
+                <input type="hidden" name="clientId" value="@Model.App.ClientId" />
+                <button type="submit" onclick="return confirm('Delete this app? This cannot be undone.')"
+                        class="px-3 py-1.5 text-sm border border-ward-error text-ward-error rounded-lg hover:bg-red-50 transition">
+                    Delete
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit form -->
+    <form method="post" asp-page-handler="Update" class="bg-ward-surface border border-ward-border rounded-xl p-6 space-y-4">
+        <input type="hidden" name="clientId" value="@Model.App.ClientId" />
+
+        <rw-form-field label="Client Name" name="clientName" value="@Model.App.ClientName" required="true"></rw-form-field>
+
+        <div class="grid grid-cols-2 gap-4">
+            <div>
+                <label class="block text-sm font-medium text-ward-text mb-1">Enabled</label>
+                <select name="enabled" class="w-full px-3 py-2 border-2 border-ward-border rounded-lg focus:border-ward-primary focus:outline-none">
+                    <option value="true" selected="@Model.App.Enabled">Yes</option>
+                    <option value="false" selected="@(!Model.App.Enabled)">No</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-ward-text mb-1">Require PKCE</label>
+                <select name="requirePkce" class="w-full px-3 py-2 border-2 border-ward-border rounded-lg focus:border-ward-primary focus:outline-none">
+                    <option value="true" selected="@Model.App.RequirePkce">Yes</option>
+                    <option value="false" selected="@(!Model.App.RequirePkce)">No</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+            <rw-form-field label="Access Token Lifetime (seconds)" name="accessTokenLifetimeSeconds"
+                           type="number" value="@Model.App.AccessTokenLifetimeSeconds"></rw-form-field>
+            <rw-form-field label="Refresh Token Lifetime (seconds)" name="refreshTokenLifetimeSeconds"
+                           type="number" value="@Model.App.RefreshTokenLifetimeSeconds"></rw-form-field>
+        </div>
+
+        <!-- Relationships -->
+        <div>
+            <label class="block text-sm font-medium text-ward-text mb-1">Grant Types</label>
+            <p class="text-sm text-ward-muted mb-2">@string.Join(", ", Model.App.GrantTypes)</p>
+        </div>
+        <div>
+            <label class="block text-sm font-medium text-ward-text mb-1">Redirect URIs</label>
+            <p class="text-sm text-ward-muted mb-2">@(Model.App.RedirectUris.Length > 0 ? string.Join(", ", Model.App.RedirectUris) : "None")</p>
+        </div>
+        <div>
+            <label class="block text-sm font-medium text-ward-text mb-1">Allowed Scopes</label>
+            <p class="text-sm text-ward-muted mb-2">@(Model.App.AllowedScopes.Length > 0 ? string.Join(", ", Model.App.AllowedScopes) : "None")</p>
+        </div>
+
+        <div class="pt-4">
+            <button type="submit" class="px-4 py-2 bg-ward-primary text-white font-medium rounded-lg hover:bg-indigo-700 transition">
+                Save Changes
+            </button>
+        </div>
+    </form>
+}

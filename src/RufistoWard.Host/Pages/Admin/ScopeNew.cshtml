@@ -1,0 +1,24 @@
+@page "/admin/scopes/new"
+@model RufistoWard.Core.Pages.Admin.ScopeNewModel
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Add Scope";
+}
+
+<rw-breadcrumb items="Dashboard|/admin;Scopes|/admin/scopes;Add Scope"></rw-breadcrumb>
+<h2 class="text-3xl font-heading font-bold text-ward-text mb-8">Add Scope</h2>
+
+@if (!string.IsNullOrEmpty(Model.ErrorMessage))
+{
+    <rw-toast type="error" message="@Model.ErrorMessage"></rw-toast>
+}
+
+<form method="post" class="bg-ward-surface border border-ward-border rounded-xl p-6 space-y-4">
+    <rw-form-field label="Name" name="name" value="@Model.Name" required="true" help="Unique scope identifier (e.g., api.read)."></rw-form-field>
+    <rw-form-field label="Display Name" name="displayName" value="@Model.DisplayName"></rw-form-field>
+    <rw-form-field label="Description" name="description" value="@Model.Description"></rw-form-field>
+    <div class="pt-4 flex gap-3">
+        <button type="submit" class="px-4 py-2 bg-ward-accent hover:bg-ward-accent-hover text-white font-medium rounded-lg transition">Add Scope</button>
+        <a href="/admin/scopes" class="px-4 py-2 border border-ward-border text-ward-muted rounded-lg hover:bg-ward-surface-alt transition">Cancel</a>
+    </div>
+</form>

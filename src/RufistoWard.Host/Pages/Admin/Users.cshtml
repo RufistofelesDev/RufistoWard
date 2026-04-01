@@ -1,0 +1,55 @@
+@page "/admin/users"
+@model RufistoWard.Core.Pages.Admin.UsersModel
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Users";
+}
+
+<rw-breadcrumb items="Dashboard|/admin;Users"></rw-breadcrumb>
+
+<div class="flex items-center justify-between mb-6">
+    <h2 class="text-3xl font-heading font-bold text-ward-text">Users</h2>
+    <a href="/admin/users/new" class="px-4 py-2 bg-ward-accent hover:bg-ward-accent-hover text-white font-medium rounded-lg transition">+ Add User</a>
+</div>
+
+<form method="get" class="mb-6 flex gap-3">
+    <input type="text" name="search" value="@Model.Search" placeholder="Search by username or email..."
+           class="w-full max-w-sm px-3 py-2 border-2 border-ward-border rounded-lg focus:border-ward-primary focus:outline-none" />
+    <select name="status" class="px-3 py-2 border-2 border-ward-border rounded-lg focus:border-ward-primary focus:outline-none" onchange="this.form.submit()">
+        <option value="">All</option>
+        <option value="active" selected="@(Model.Status == "active")">Active</option>
+        <option value="inactive" selected="@(Model.Status == "inactive")">Inactive</option>
+    </select>
+</form>
+
+@if (Model.Items.Count == 0)
+{
+    <rw-empty-state message="No users found." action-url="/admin/users/new" action-label="Add your first user"></rw-empty-state>
+}
+else
+{
+    <div class="bg-ward-surface border border-ward-border rounded-xl overflow-hidden">
+        <table class="w-full text-sm">
+            <thead class="bg-ward-surface-alt border-b border-ward-border">
+                <tr>
+                    <th class="text-left px-4 py-3 font-medium text-ward-muted">Username</th>
+                    <th class="text-left px-4 py-3 font-medium text-ward-muted">Email</th>
+                    <th class="text-left px-4 py-3 font-medium text-ward-muted">Status</th>
+                    <th class="text-left px-4 py-3 font-medium text-ward-muted">Created</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-ward-border">
+                @foreach (var user in Model.Items)
+                {
+                    <tr class="hover:bg-ward-primary-light transition-colors cursor-pointer"
+                        onclick="window.location='/admin/users/@user.SubjectId'">
+                        <td class="px-4 py-3 font-medium">@user.Username</td>
+                        <td class="px-4 py-3 text-ward-muted">@user.Email</td>
+                        <td class="px-4 py-3"><rw-status-badge status="@(user.IsActive ? "active" : "inactive")"></rw-status-badge></td>
+                        <td class="px-4 py-3 text-ward-muted">@user.CreatedAt.ToString("yyyy-MM-dd")</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
