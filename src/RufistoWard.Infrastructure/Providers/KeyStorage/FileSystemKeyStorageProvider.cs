@@ -1,14 +1,16 @@
 namespace RufistoWard.Tokens.Providers.KeyStorage;
 
+using Microsoft.AspNetCore.DataProtection;
 using RufistoWard.Identity.Interfaces;
 
-public sealed class FileSystemKeyStorageProvider(string keyDirectory) : IKeyStorageProvider
+public sealed class FileSystemKeyStorageProvider(string keyDirectory, IDataProtector dataProtector) : IKeyStorageProvider
 {
     public async Task StoreKeyAsync(string keyId, byte[] keyMaterial, CancellationToken cancellationToken = default)
     {
         Directory.CreateDirectory(keyDirectory);
         var path = GetKeyPath(keyId);
-        await File.WriteAllBytesAsync(path, keyMaterial, cancellationToken);
+        var protectedData = dataProtector.Protect(keyMaterial);
+        await File.WriteAllBytesAsync(path, protectedData, cancellationToken);
     }
 
     public async Task<byte[]?> LoadKeyAsync(string keyId, CancellationToken cancellationToken = default)
@@ -18,7 +20,8 @@ public sealed class FileSystemKeyStorageProvider(string keyDirectory) : IKeyStor
         {
             return null;
         }
-        return await File.ReadAllBytesAsync(path, cancellationToken);
+        var protectedData = await File.ReadAllBytesAsync(path, cancellationToken);
+        return dataProtector.Unprotect(protectedData);
     }
 
     public Task<IReadOnlyList<string>> ListKeyIdsAsync(CancellationToken cancellationToken = default)

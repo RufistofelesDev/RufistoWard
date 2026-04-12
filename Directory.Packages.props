@@ -23,6 +23,8 @@
     <PackageVersion Include="Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore" Version="10.0.5" />
     <!-- Identity -->
     <PackageVersion Include="Microsoft.Extensions.Identity.Core" Version="10.0.5" />
+    <!-- Data Protection -->
+    <PackageVersion Include="Microsoft.AspNetCore.DataProtection.Abstractions" Version="10.0.5" />
     <!-- Caching (used from Story 2.1 onward) -->
     <PackageVersion Include="Microsoft.Extensions.Caching.Hybrid" Version="10.1.0" />
   </ItemGroup>

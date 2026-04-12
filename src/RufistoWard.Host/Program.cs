@@ -24,6 +24,7 @@ builder.Services.AddAuthentication("IdentityServerCookie")
         options.LoginPath = "/login";
     });
 
+builder.Services.AddAuthorization();
 builder.Services.AddRazorPages();
 
 var app = builder.Build();
@@ -48,6 +49,7 @@ if (args.Length > 0)
 app.UseSecurityHeaders();
 app.UseStaticFiles();
 app.UseAuthentication();
+app.UseAuthorization();
 app.UseRateLimiter();
 
 app.MapDiscoveryEndpoints();

@@ -11,7 +11,8 @@ public static class UserAdminEndpoints
 {
     public static IEndpointRouteBuilder MapUserAdminEndpoints(this IEndpointRouteBuilder endpoints)
     {
-        var group = endpoints.MapGroup("/api/admin/users");
+        var group = endpoints.MapGroup("/api/admin/users")
+            .RequireAuthorization();
 
         group.MapGet("/", async (
             RufistoWardDbContext db,

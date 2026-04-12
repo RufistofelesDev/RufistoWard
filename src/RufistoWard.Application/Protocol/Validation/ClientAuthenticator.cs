@@ -1,5 +1,7 @@
 namespace RufistoWard.Auth.Protocol.Validation;
 
+using System.Security.Cryptography;
+using System.Text;
 using RufistoWard.Auth.Protocol.Common;
 using RufistoWard.Identity.Entities;
 using RufistoWard.Identity.Interfaces;
@@ -30,11 +32,14 @@ public sealed class ClientAuthenticator(IClientRepository clientRepository) : IC
                 return Result<Client>.Failure(ProtocolError.InvalidClient("client_secret is required for this client."));
             }
 
-            // For MVP, verify secret exists in client's secrets collection
-            // Full hash verification will be added with ISecretHasher
+            var incomingHash = Convert.ToBase64String(
+                SHA256.HashData(Encoding.UTF8.GetBytes(clientSecret)));
+
             var hasValidSecret = client.Secrets.Any(s =>
-                s.Value == clientSecret &&
-                (s.Expiration is null || s.Expiration > DateTime.UtcNow));
+                (s.Expiration is null || s.Expiration > DateTime.UtcNow) &&
+                CryptographicOperations.FixedTimeEquals(
+                    Encoding.UTF8.GetBytes(s.Value),
+                    Encoding.UTF8.GetBytes(incomingHash)));
 
             if (!hasValidSecret)
             {

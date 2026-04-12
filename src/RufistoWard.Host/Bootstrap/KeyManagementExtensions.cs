@@ -1,5 +1,6 @@
 namespace RufistoWard.Core.Bootstrap;
 
+using Microsoft.AspNetCore.DataProtection;
 using RufistoWard.Auth.Protocol.Keys;
 using RufistoWard.Core.Options;
 using RufistoWard.Identity.Interfaces;
@@ -11,6 +12,9 @@ public static class KeyManagementExtensions
         this IServiceCollection services,
         IConfiguration configuration)
     {
+        services.AddDataProtection()
+            .SetApplicationName("RufistoWard");
+
         var provider = configuration.GetSection("KeyManagement")["KeyStorageProvider"] ?? "FileSystem";
         var storagePath = configuration.GetSection("KeyManagement")["StoragePath"]
             ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "RufistoWard", "keys");
@@ -21,7 +25,12 @@ public static class KeyManagementExtensions
                 services.AddSingleton<IKeyStorageProvider, CertificateStoreKeyStorageProvider>();
                 break;
             default:
-                services.AddSingleton<IKeyStorageProvider>(new FileSystemKeyStorageProvider(storagePath));
+                services.AddSingleton<IKeyStorageProvider>(sp =>
+                {
+                    var dpProvider = sp.GetRequiredService<IDataProtectionProvider>();
+                    var protector = dpProvider.CreateProtector("RufistoWard.KeyStorage");
+                    return new FileSystemKeyStorageProvider(storagePath, protector);
+                });
                 break;
         }
 

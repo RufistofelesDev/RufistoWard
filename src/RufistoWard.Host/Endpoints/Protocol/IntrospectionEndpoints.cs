@@ -2,6 +2,7 @@ namespace RufistoWard.Core.Endpoints.Protocol;
 
 using System.Text;
 using System.Text.Json;
+using RufistoWard.Auth.Protocol.UserInfo;
 using RufistoWard.Auth.Protocol.Validation;
 using RufistoWard.Identity.Interfaces;
 
@@ -13,6 +14,7 @@ public static class IntrospectionEndpoints
             HttpContext httpContext,
             IClientAuthenticator clientAuthenticator,
             IPersistedGrantRepository grantRepository,
+            IAccessTokenValidator accessTokenValidator,
             CancellationToken cancellationToken) =>
         {
             var form = await httpContext.Request.ReadFormAsync(cancellationToken);
@@ -62,23 +64,19 @@ public static class IntrospectionEndpoints
                 });
             }
 
-            // Try to decode as JWT and check expiration
-            if (TryDecodeJwt(token, out var payload))
+            // Validate JWT with full signature verification
+            var validationResult = await accessTokenValidator.ValidateAsync(token, cancellationToken);
+            if (validationResult.IsSuccess)
             {
-                var exp = payload.TryGetProperty("exp", out var expProp) ? expProp.GetInt64() : 0;
-                if (exp > DateTimeOffset.UtcNow.ToUnixTimeSeconds())
+                var validated = validationResult.Value!;
+                return Results.Json(new
                 {
-                    return Results.Json(new
-                    {
-                        active = true,
-                        scope = payload.TryGetProperty("scope", out var scopeProp) ? scopeProp.GetString() : null,
-                        client_id = payload.TryGetProperty("aud", out var audProp) ? audProp.GetString() : null,
-                        sub = payload.TryGetProperty("sub", out var subProp) ? subProp.GetString() : null,
-                        exp,
-                        iat = payload.TryGetProperty("iat", out var iatProp) ? iatProp.GetInt64() : 0,
-                        token_type = "access_token",
-                    });
-                }
+                    active = true,
+                    scope = string.Join(' ', validated.Scopes),
+                    client_id = validated.ClientId,
+                    sub = validated.Subject,
+                    token_type = "access_token",
+                });
             }
 
             return Results.Json(new { active = false });
@@ -91,36 +89,12 @@ public static class IntrospectionEndpoints
     {
         try
         {
-            var doc = JsonDocument.Parse(data);
+            using var doc = JsonDocument.Parse(data);
             return doc.RootElement.TryGetProperty("scope", out var scope) ? scope.GetString() : null;
         }
         catch
         {
             return null;
-        }
-    }
-
-    private static bool TryDecodeJwt(string token, out JsonElement payload)
-    {
-        payload = default;
-        var parts = token.Split('.');
-        if (parts.Length != 3) return false;
-
-        try
-        {
-            var padded = parts[1].Replace('-', '+').Replace('_', '/');
-            switch (padded.Length % 4)
-            {
-                case 2: padded += "=="; break;
-                case 3: padded += "="; break;
-            }
-            var json = Encoding.UTF8.GetString(Convert.FromBase64String(padded));
-            payload = JsonDocument.Parse(json).RootElement;
-            return true;
-        }
-        catch
-        {
-            return false;
         }
     }
 }

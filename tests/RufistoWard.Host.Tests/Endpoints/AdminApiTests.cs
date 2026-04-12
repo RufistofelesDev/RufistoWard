@@ -2,11 +2,16 @@ namespace RufistoWard.Core.Tests.Endpoints;
 
 using System.Net;
 using System.Net.Http.Json;
+using System.Security.Claims;
+using System.Text.Encodings.Web;
 using System.Text.Json;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using RufistoWard.Tokens.Persistence;
 
 [Trait("Category", "Integration")]
@@ -54,8 +59,27 @@ public sealed class AdminApiTests
 
                     services.AddDbContext<RufistoWardDbContext>(options =>
                         options.UseInMemoryDatabase(dbName));
+
+                    services.AddAuthentication(defaultScheme: "TestScheme")
+                        .AddScheme<AuthenticationSchemeOptions, TestAuthHandler>("TestScheme", _ => { });
                 });
             });
+    }
+
+    private sealed class TestAuthHandler(
+        IOptionsMonitor<AuthenticationSchemeOptions> options,
+        ILoggerFactory logger,
+        UrlEncoder encoder)
+        : AuthenticationHandler<AuthenticationSchemeOptions>(options, logger, encoder)
+    {
+        protected override Task<AuthenticateResult> HandleAuthenticateAsync()
+        {
+            var claims = new[] { new Claim(ClaimTypes.Name, "admin"), new Claim(ClaimTypes.Role, "Admin") };
+            var identity = new ClaimsIdentity(claims, "TestScheme");
+            var principal = new ClaimsPrincipal(identity);
+            var ticket = new AuthenticationTicket(principal, "TestScheme");
+            return Task.FromResult(AuthenticateResult.Success(ticket));
+        }
     }
 
     // ==================== CLIENT CRUD ====================
