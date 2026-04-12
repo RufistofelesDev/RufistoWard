@@ -27,6 +27,7 @@ public sealed class PersistedGrant
         };
     }
 
+    public void UpdateData(string data) => Data = data;
     public void MarkConsumed() => ConsumedAt = DateTime.UtcNow;
     public bool IsConsumed => ConsumedAt.HasValue;
     public bool IsExpired => Expiration.HasValue && Expiration.Value < DateTime.UtcNow;

@@ -3,6 +3,7 @@ namespace RufistoWard.Core.Endpoints.Protocol;
 using System.Security.Claims;
 using System.Web;
 using RufistoWard.Auth.Protocol.Authorization;
+using RufistoWard.Identity.Interfaces;
 
 public static class AuthorizeEndpoints
 {
@@ -12,6 +13,7 @@ public static class AuthorizeEndpoints
             HttpContext httpContext,
             AuthorizationRequestHandler requestHandler,
             AuthorizationCodeGenerator codeGenerator,
+            IClientRepository clientRepository,
             CancellationToken cancellationToken) =>
         {
             var query = httpContext.Request.Query;
@@ -33,14 +35,17 @@ public static class AuthorizeEndpoints
             if (!validationResult.IsSuccess)
             {
                 var error = validationResult.Error!;
-                // For invalid_redirect_uri, show error page (never redirect)
-                if (error.Code == "invalid_redirect_uri")
+
+                // Only redirect if the redirect_uri was independently verified as registered
+                var canRedirect = false;
+                if (!string.IsNullOrEmpty(request.RedirectUri) && !string.IsNullOrEmpty(request.ClientId)
+                    && error.Code != "invalid_redirect_uri")
                 {
-                    return Results.BadRequest(new { error = error.Code, error_description = error.Description });
+                    var client = await clientRepository.FindByClientIdAsync(request.ClientId, cancellationToken);
+                    canRedirect = client?.RedirectUris.Any(r => r.Uri == request.RedirectUri) == true;
                 }
 
-                // For other errors with a valid redirect_uri, redirect with error
-                if (!string.IsNullOrEmpty(request.RedirectUri))
+                if (canRedirect)
                 {
                     var errorRedirect = $"{request.RedirectUri}?error={error.Code}&error_description={HttpUtility.UrlEncode(error.Description)}";
                     if (!string.IsNullOrEmpty(request.State))

@@ -74,12 +74,7 @@ public sealed class DeviceCodeTokenHandler(
         // Check if not yet approved
         if (!codeData.Approved || string.IsNullOrEmpty(codeData.SubjectId))
         {
-            // Update grant with new poll time
-            // Note: PersistedGrant.Data is private set, so we create a new grant representation
-            // For simplicity, we update via the repository
-            grant = PersistedGrant.Create(
-                grant.Id, grant.Type, grant.ClientId, grant.SubjectId,
-                JsonSerializer.Serialize(codeData), grant.Expiration);
+            grant.UpdateData(JsonSerializer.Serialize(codeData));
             await grantRepository.UpdateAsync(grant, cancellationToken);
 
             return Result<TokenResponse>.Failure(new ProtocolError("authorization_pending", "The user has not yet authorized the device."));
