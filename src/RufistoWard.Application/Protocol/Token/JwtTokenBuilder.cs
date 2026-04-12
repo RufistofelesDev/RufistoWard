@@ -3,6 +3,7 @@ namespace RufistoWard.Auth.Protocol.Token;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using RufistoWard.Auth.Protocol.Common;
 using RufistoWard.Identity.Interfaces;
 
 public sealed class JwtTokenBuilder(ISigningKeyRepository signingKeyRepository) : ITokenBuilder
@@ -73,8 +74,8 @@ public sealed class JwtTokenBuilder(ISigningKeyRepository signingKeyRepository) 
         var headerJson = JsonSerializer.Serialize(header);
         var payloadJson = JsonSerializer.Serialize(payload);
 
-        var headerB64 = Base64UrlEncode(Encoding.UTF8.GetBytes(headerJson));
-        var payloadB64 = Base64UrlEncode(Encoding.UTF8.GetBytes(payloadJson));
+        var headerB64 = Base64Url.Encode(Encoding.UTF8.GetBytes(headerJson));
+        var payloadB64 = Base64Url.Encode(Encoding.UTF8.GetBytes(payloadJson));
 
         var signingInput = $"{headerB64}.{payloadB64}";
         var signature = Sign(signingInput, signingKey.KeyType, signingKey.Algorithm, signingKey.SerializedKey);
@@ -99,7 +100,7 @@ public sealed class JwtTokenBuilder(ISigningKeyRepository signingKeyRepository) 
                 _ => HashAlgorithmName.SHA256,
             };
             var sig = rsa.SignData(data, hashAlgorithm, RSASignaturePadding.Pkcs1);
-            return Base64UrlEncode(sig);
+            return Base64Url.Encode(sig);
         }
 
         if (string.Equals(keyType, "EC", StringComparison.OrdinalIgnoreCase))
@@ -114,7 +115,7 @@ public sealed class JwtTokenBuilder(ISigningKeyRepository signingKeyRepository) 
                 _ => HashAlgorithmName.SHA256,
             };
             var sig = ecdsa.SignData(data, hashAlgorithm);
-            return Base64UrlEncode(sig);
+            return Base64Url.Encode(sig);
         }
 
         throw new NotSupportedException($"Unsupported key type: {keyType}");
@@ -124,14 +125,7 @@ public sealed class JwtTokenBuilder(ISigningKeyRepository signingKeyRepository) 
     {
         var hash = SHA256.HashData(Encoding.ASCII.GetBytes(accessToken));
         var leftHalf = hash[..(hash.Length / 2)];
-        return Base64UrlEncode(leftHalf);
+        return Base64Url.Encode(leftHalf);
     }
 
-    private static string Base64UrlEncode(byte[] data)
-    {
-        return Convert.ToBase64String(data)
-            .TrimEnd('=')
-            .Replace('+', '-')
-            .Replace('/', '_');
-    }
 }

@@ -2,6 +2,7 @@ namespace RufistoWard.Auth.Protocol.Discovery;
 
 using System.Security.Cryptography;
 using Microsoft.Extensions.Caching.Hybrid;
+using RufistoWard.Auth.Protocol.Common;
 using RufistoWard.Identity.Interfaces;
 
 public sealed class JwksService(
@@ -62,8 +63,8 @@ public sealed class JwksService(
             Kty = "RSA",
             Use = "sig",
             Alg = algorithm,
-            N = Base64UrlEncode(parameters.Modulus!),
-            E = Base64UrlEncode(parameters.Exponent!),
+            N = Base64Url.Encode(parameters.Modulus!),
+            E = Base64Url.Encode(parameters.Exponent!),
         };
     }
 
@@ -80,16 +81,9 @@ public sealed class JwksService(
             Use = "sig",
             Alg = algorithm,
             Crv = "P-256",
-            X = Base64UrlEncode(parameters.Q.X!),
-            Y = Base64UrlEncode(parameters.Q.Y!),
+            X = Base64Url.Encode(parameters.Q.X!),
+            Y = Base64Url.Encode(parameters.Q.Y!),
         };
     }
 
-    private static string Base64UrlEncode(byte[] data)
-    {
-        return Convert.ToBase64String(data)
-            .TrimEnd('=')
-            .Replace('+', '-')
-            .Replace('/', '_');
-    }
 }

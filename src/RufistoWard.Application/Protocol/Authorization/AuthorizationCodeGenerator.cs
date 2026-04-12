@@ -1,6 +1,8 @@
 namespace RufistoWard.Auth.Protocol.Authorization;
 
+using System.Security.Cryptography;
 using System.Text.Json;
+using RufistoWard.Auth.Protocol.Common;
 using RufistoWard.Auth.Protocol.Token;
 using RufistoWard.Identity.Entities;
 using RufistoWard.Identity.Interfaces;
@@ -12,7 +14,7 @@ public sealed class AuthorizationCodeGenerator(IPersistedGrantRepository grantRe
         ValidatedAuthorizeRequest request,
         CancellationToken cancellationToken = default)
     {
-        var codeId = Guid.NewGuid().ToString("N");
+        var codeId = Base64Url.Encode(RandomNumberGenerator.GetBytes(32));
 
         var codeData = new AuthorizationCodeData
         {
