@@ -109,6 +109,7 @@ public sealed class AuthorizationCodeTokenHandler(
             LifetimeSeconds = client.AccessTokenLifetimeSeconds,
             Scopes = scopes,
             Nonce = codeData.Nonce,
+            AuthTime = new DateTimeOffset(grant.CreatedAt, TimeSpan.Zero),
         };
 
         var accessToken = await tokenBuilder.BuildAccessTokenAsync(tokenContext, cancellationToken);

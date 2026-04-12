@@ -1,5 +1,6 @@
 namespace RufistoWard.Core.Endpoints.Protocol;
 
+using System.Text;
 using RufistoWard.Auth.Protocol.Validation;
 using RufistoWard.Identity.Interfaces;
 
@@ -17,6 +18,19 @@ public static class RevocationEndpoints
             var token = form["token"].ToString();
             var clientId = form["client_id"].ToString();
             var clientSecret = form["client_secret"].ToString();
+
+            // Support Basic auth header (RFC 7009)
+            var authHeader = httpContext.Request.Headers.Authorization.ToString();
+            if (authHeader.StartsWith("Basic ", StringComparison.OrdinalIgnoreCase))
+            {
+                var decoded = Encoding.UTF8.GetString(Convert.FromBase64String(authHeader["Basic ".Length..]));
+                var parts = decoded.Split(':', 2);
+                if (parts.Length == 2)
+                {
+                    clientId = Uri.UnescapeDataString(parts[0]);
+                    clientSecret = Uri.UnescapeDataString(parts[1]);
+                }
+            }
 
             // Authenticate client
             var clientResult = await clientAuthenticator.AuthenticateAsync(clientId, clientSecret, cancellationToken);

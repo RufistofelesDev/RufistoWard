@@ -94,6 +94,7 @@ public sealed class DeviceCodeTokenHandler(
             Issuer = issuer,
             LifetimeSeconds = client.AccessTokenLifetimeSeconds,
             Scopes = scopes,
+            AuthTime = new DateTimeOffset(grant.CreatedAt, TimeSpan.Zero),
         };
 
         var accessToken = await tokenBuilder.BuildAccessTokenAsync(tokenContext, cancellationToken);

@@ -104,7 +104,8 @@ public sealed class SecurityHeadersTests
 
         Assert.True(response.Headers.Contains("Content-Security-Policy"));
         var csp = response.Headers.GetValues("Content-Security-Policy").First();
-        Assert.DoesNotContain("unsafe-inline", csp);
+        Assert.Contains("default-src 'self'", csp);
+        Assert.Contains("frame-ancestors 'none'", csp);
         Assert.DoesNotContain("unsafe-eval", csp);
     }
 

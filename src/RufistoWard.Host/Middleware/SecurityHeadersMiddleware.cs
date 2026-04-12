@@ -12,7 +12,7 @@ public sealed class SecurityHeadersMiddleware(RequestDelegate next)
             headers["X-Frame-Options"] = "DENY";
             headers["Referrer-Policy"] = "strict-origin-when-cross-origin";
             headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=(), payment=()";
-            headers["Content-Security-Policy"] = "default-src 'self'; frame-ancestors 'none'";
+            headers["Content-Security-Policy"] = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; frame-ancestors 'none'";
 
             if (context.Request.IsHttps)
             {

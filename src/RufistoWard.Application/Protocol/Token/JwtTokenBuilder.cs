@@ -41,7 +41,7 @@ public sealed class JwtTokenBuilder(ISigningKeyRepository signingKeyRepository) 
             ["exp"] = now.AddSeconds(context.LifetimeSeconds).ToUnixTimeSeconds(),
             ["nbf"] = now.ToUnixTimeSeconds(),
             ["iat"] = now.ToUnixTimeSeconds(),
-            ["auth_time"] = now.ToUnixTimeSeconds(),
+            ["auth_time"] = (context.AuthTime ?? now).ToUnixTimeSeconds(),
             ["at_hash"] = ComputeAtHash(accessToken),
         };
 

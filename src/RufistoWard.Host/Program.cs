@@ -22,6 +22,11 @@ builder.Services.AddAuthentication("IdentityServerCookie")
     .AddCookie("IdentityServerCookie", options =>
     {
         options.LoginPath = "/login";
+        options.Cookie.HttpOnly = true;
+        options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+        options.Cookie.SameSite = SameSiteMode.Lax;
+        options.ExpireTimeSpan = TimeSpan.FromMinutes(30);
+        options.SlidingExpiration = true;
     });
 
 builder.Services.AddAuthorization();

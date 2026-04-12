@@ -14,5 +14,6 @@ public sealed record TokenBuildContext
     public required int LifetimeSeconds { get; init; }
     public required string[] Scopes { get; init; }
     public string? Nonce { get; init; }
+    public DateTimeOffset? AuthTime { get; init; }
     public Dictionary<string, string> AdditionalClaims { get; init; } = [];
 }
