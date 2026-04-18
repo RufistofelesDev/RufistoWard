@@ -35,16 +35,16 @@ jobs:
           --configuration Release
           --no-build
           --filter "Category=Integration|Category=Database"
-          --results-directory ./TestResults
-          --logger "trx;LogFileName=integration-tests.trx"
+          --logger "trx"
 
       - name: Upload Test Results
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: integration-test-results
-          path: ./TestResults/*.trx
+          path: '**/TestResults/*.trx'
           retention-days: 30
+          if-no-files-found: warn
 
   # Conformance job is a placeholder until Story 10.5 lands the openid-conformance-suite harness.
   # Left here so the workflow file grows with the project rather than being created twice.
