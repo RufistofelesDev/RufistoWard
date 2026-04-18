@@ -57,10 +57,16 @@ public sealed class AccessTokenValidator(
         if (!VerifySignature(signingInput, signatureBytes, signingKey.KeyType, alg, signingKey.SerializedKey))
             return Result<ValidatedToken>.Failure(ProtocolError.InvalidToken("The access token signature is invalid."));
 
+        var now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+
         // Validate expiration
         var exp = payload.TryGetProperty("exp", out var expProp) ? expProp.GetInt64() : 0;
-        if (exp <= DateTimeOffset.UtcNow.ToUnixTimeSeconds())
+        if (exp <= now)
             return Result<ValidatedToken>.Failure(ProtocolError.InvalidToken("The access token has expired."));
+
+        // Validate not-before (nbf) — reject tokens that are not yet valid
+        if (payload.TryGetProperty("nbf", out var nbfProp) && nbfProp.GetInt64() > now)
+            return Result<ValidatedToken>.Failure(ProtocolError.InvalidToken("The access token is not yet valid."));
 
         // Validate issuer
         var tokenIssuer = payload.TryGetProperty("iss", out var issProp) ? issProp.GetString() : null;
