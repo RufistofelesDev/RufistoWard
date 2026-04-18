@@ -1,0 +1,56 @@
+name: Integration & Conformance
+
+on:
+  schedule:
+    # Nightly at 04:00 UTC
+    - cron: '0 4 * * *'
+  workflow_dispatch: {}
+
+jobs:
+  integration-tests:
+    name: Integration & Database Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Download Tailwind CSS CLI
+        run: |
+          mkdir -p tools
+          curl -sL https://github.com/tailwindlabs/tailwindcss/releases/download/v4.1.7/tailwindcss-linux-x64 -o tools/tailwindcss
+          chmod +x tools/tailwindcss
+
+      - name: Restore
+        run: dotnet restore RufistoWard.slnx
+
+      - name: Build
+        run: dotnet build RufistoWard.slnx --configuration Release --no-restore -warnaserror
+
+      - name: Integration & Database Tests
+        run: >
+          dotnet test RufistoWard.slnx
+          --configuration Release
+          --no-build
+          --filter "Category=Integration|Category=Database"
+          --results-directory ./TestResults
+          --logger "trx;LogFileName=integration-tests.trx"
+
+      - name: Upload Test Results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integration-test-results
+          path: ./TestResults/*.trx
+          retention-days: 30
+
+  # Conformance job is a placeholder until Story 10.5 lands the openid-conformance-suite harness.
+  # Left here so the workflow file grows with the project rather than being created twice.
+  conformance-tests:
+    name: OIDC Conformance (placeholder — see Story 10.5)
+    runs-on: ubuntu-latest
+    if: false  # disabled until Story 10.5 delivers tests/conformance/
+    steps:
+      - run: echo "Placeholder — enable when tests/conformance/ exists."

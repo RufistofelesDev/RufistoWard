@@ -36,17 +36,21 @@ tools/
 .idea/
 *.sln.iml
 
-# Claude / AI tooling
-.claude/
+# Claude Code session-local state (per-developer, not checked in)
+.claude/settings.local.json
+.claude/projects/
+.claude/skills/
 .opencode/
 .tmp/
 
-# BMAD workflow artifacts
+# BMAD tooling installation (each developer installs locally via BMAD installer)
 _bmad/
-_bmad-output/
 
-# GitHub workflows (managed separately)
-.github/
+# BMAD auto-generated test artifacts (not source of truth)
+_bmad-output/test-artifacts/
+
+# Note: .github/ and _bmad-output/ (except test-artifacts/) are now tracked.
+# Planning artifacts, stories, sprint status, and CI workflows are project source of truth.
 
 # macOS
 .DS_Store

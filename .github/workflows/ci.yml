@@ -1,0 +1,56 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+jobs:
+  build-and-unit-test:
+    name: Build & Unit Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Download Tailwind CSS CLI
+        run: |
+          mkdir -p tools
+          curl -sL https://github.com/tailwindlabs/tailwindcss/releases/download/v4.1.7/tailwindcss-linux-x64 -o tools/tailwindcss
+          chmod +x tools/tailwindcss
+
+      - name: Restore
+        run: dotnet restore RufistoWard.slnx
+
+      - name: Build (warnings as errors)
+        run: dotnet build RufistoWard.slnx --configuration Release --no-restore -warnaserror
+
+      - name: Unit Tests with Coverage
+        run: >
+          dotnet test RufistoWard.slnx
+          --configuration Release
+          --no-build
+          --filter "Category!=Database&Category!=Integration&Category!=Conformance"
+          --collect:"XPlat Code Coverage"
+          --results-directory ./TestResults
+          --logger "trx;LogFileName=unit-tests.trx"
+
+      - name: Upload Coverage Artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: ./TestResults/**/coverage.cobertura.xml
+          retention-days: 30
+
+      - name: Upload Test Results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: unit-test-results
+          path: ./TestResults/*.trx
+          retention-days: 30
