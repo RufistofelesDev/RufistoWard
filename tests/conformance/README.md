@@ -3,93 +3,108 @@
 Runs RufistoWard against the [OpenID Foundation conformance suite](https://gitlab.com/openid/conformance-suite)
 for the **Basic** and **Config** OP certification profiles (Story 10.5).
 
-> **Status: Tasks 1–2 done (code/config); Docker-dependent steps pending.** The compose topology,
-> OP image, TLS, and config templates are in place, and the `seed-conformance` CLI command now
-> seeds the static client + login test user deterministically (Task 2, unit-tested). The headless
-> runner (Task 4) and the nightly `conformance.yml` workflow (Task 5) are not done yet. Lines marked
-> **TODO** below need a real `docker compose up` to finalize — the stack has not been booted
-> end-to-end (no Docker on the authoring machine).
+> **Status (2026-06-05): TUNNEL-FIRST.** The primary path runs RufistoWard locally, exposes it via a
+> public HTTPS tunnel, and drives the **hosted** OIDF suite (`certification.openid.net`) against it — no
+> Docker. The `seed-conformance` CLI command seeds the static client + login test user deterministically
+> (done, unit-tested; default redirect base = the hosted suite). Remaining: run both plans green + capture
+> the bundle + add the badge. The **self-hosted docker-compose** path (and unattended nightly CI) is
+> **deferred to Story 10.5a** — its scaffold stays in this folder but is not the current path.
 
 ## Topology (why it's shaped this way)
 
 The suite makes **server-to-server** calls to the OP (discovery, token, JWKS, UserInfo) **and** drives a
 **browser** through the OP's `/connect/authorize` → `/Login` pages. Both must reach the OP at the **same**
-issuer URL. So the OP runs as a container (`rufistoward-op`) on the suite's compose network, and its issuer
-is the container DNS name `https://rufistoward-op:5001` — resolvable by the suite's server and browser alike.
+issuer URL.
+
+**Primary (tunnel):** the OP runs on `localhost`; a public HTTPS tunnel gives it a stable public URL that
+becomes `Token:Issuer`. The hosted suite reaches that one URL for both server calls and browser redirects.
+The tunnel provides a **real CA-signed cert**, so there is no truststore work.
 
 ```
-docker compose project (one network)
-├── server      (OIDF suite, Java)        ─┐ from vendored ./conformance-suite/ via `include:`
-├── nginx       (suite TLS proxy, :8443)   │  UI at https://localhost.emobix.co.uk:8443
-├── mongodb     (suite store)             ─┘
-├── postgres    (OP store)
-└── rufistoward-op  (system under test, https://rufistoward-op:5001)
+certification.openid.net  ──HTTPS──▶  cloudflared/ngrok tunnel  ──▶  localhost:RufistoWard.Host
+ (hosted suite: server                 https://YOUR-TUNNEL-HOST          + local Postgres
+  calls + browser)
 ```
+
+**Deferred (docker self-host, Story 10.5a):** OP + suite + Mongo on one compose network; issuer = container
+DNS `https://rufistoward-op:5001`; the OP's self-signed cert must be added to the suite truststore. Needed
+for unattended nightly CI. See [Deferred: docker self-host](#deferred-docker-self-host-story-105a) below.
 
 ## Files
 
 | Path | Purpose |
 |------|---------|
-| `docker-compose.yml` | OP + Postgres; `include`s the vendored suite compose |
-| `../../src/RufistoWard.Host/Dockerfile` | OP image (Tailwind skipped — cosmetic) |
-| `config/appsettings.Conformance.json` | OP config: issuer, Postgres, auto-migrate, RSA key, relaxed rate limits |
-| `certs/generate-certs.sh` | self-signed TLS cert for `rufistoward-op` (op.pfx + op-cert.pem) |
-| `seed/seed-conformance.sh` | seeds admin user + conformance client/test user via the `seed-conformance` CLI command |
-| `config/test-plans/rufistoward-config.json` | suite config for the **config** plan (discovery only) |
-| `config/test-plans/rufistoward-basic.json` | suite config for the **basic** plan (incl. BrowserControl login) |
+| `config/appsettings.Conformance.json` | OP config: issuer (= tunnel URL), Postgres, auto-migrate, RSA key, relaxed rate limits |
+| `config/test-plans/rufistoward-*.json` | hosted-suite plan templates (substitute `YOUR-TUNNEL-HOST`) |
+| `docker-compose.yml` | _(deferred 10.5a)_ OP + Postgres; `include`s the vendored suite compose |
+| `../../src/RufistoWard.Host/Dockerfile` | _(deferred 10.5a)_ OP image (Tailwind skipped — cosmetic) |
+| `certs/generate-certs.sh` | _(deferred 10.5a)_ self-signed TLS cert for `rufistoward-op` |
+| `seed/seed-conformance.sh` | _(deferred 10.5a)_ docker bring-up seeding wrapper; tunnel path calls the CLI directly |
 
-## One-time setup
+## Primary runbook — tunnel + hosted suite
+
+Prerequisites: a local **Postgres** (the OP is Npgsql-specific, no SQLite), a tunnel tool
+(**cloudflared** named tunnel preferred; ngrok with a *reserved* domain works — **not** ngrok-free, see
+[Topology caveats](#tunnel-caveats)), and a free account on `certification.openid.net`.
+
+```bash
+# 1) Start the tunnel → get a STABLE public https URL (so redirect URIs don't churn).
+cloudflared tunnel run rufistoward        # → https://rufistoward.<yourdomain>
+
+# 2) Run the OP locally with the tunnel URL as issuer (+ your local Postgres).
+#    Set via tests/conformance/config/appsettings.Conformance.json or env:
+#      Token:Issuer = https://rufistoward.<yourdomain>
+#      Database:ConnectionString = <local postgres>;  Database:AutoMigrateOnStartup = true
+ASPNETCORE_ENVIRONMENT=Conformance dotnet run --project ../../src/RufistoWard.Host
+
+# 3) Seed the conformance client + login test user (default redirect base = the HOSTED suite).
+dotnet ../../src/RufistoWard.Host/bin/.../RufistoWard.Host.dll seed-conformance
+#    (or `dotnet run --project ../../src/RufistoWard.Host -- seed-conformance`)
+
+# 4) Confirm discovery is publicly reachable over valid https:
+curl https://rufistoward.<yourdomain>/.well-known/openid-configuration
+```
+
+Then in the hosted suite UI (`https://www.certification.openid.net`):
+
+1. Create **`oidcc-config-certification-test-plan`** (variant `server_metadata=discovery`). Set the
+   discovery URL to `https://rufistoward.<yourdomain>/.well-known/openid-configuration`. Run it first — it
+   validates discovery + JWKS only (no browser) and proves the topology.
+2. Create **`oidcc-basic-certification-test-plan`** (variants `server_metadata=discovery`,
+   `client_registration=static_client`). Client = `conformance-basic` / `conformance-basic-secret`. Use
+   `config/test-plans/rufistoward-basic.json` as the template (substitute `YOUR-TUNNEL-HOST`). **Verify the
+   login flow interactively before relying on the `browser` automation.**
+3. Capture the shareable result URL + download the JSON/HTML bundle to
+   `_bmad-output/test-artifacts/conformance/{YYYY-MM-DD}/`.
+
+<a id="tunnel-caveats"></a>
+**Tunnel caveats:** prefer cloudflared or ngrok-reserved — **ngrok-free** injects a browser interstitial +
+requires an `ngrok-skip-browser-warning` header that breaks both the suite's browser and its server calls.
+A stable hostname keeps the seeded redirect URIs valid across runs. This exposes a dev instance publicly:
+seed only the conformance fixtures, use a throwaway Postgres, tear the tunnel down afterward.
+
+## Deferred: docker self-host (Story 10.5a)
+
+The self-hosted path (suite + Mongo + OP on one Docker network, for **unattended nightly CI**) is carved to
+Story 10.5a. Its scaffold lives here (`docker-compose.yml`, `../../src/RufistoWard.Host/Dockerfile`,
+`certs/generate-certs.sh`, `seed/seed-conformance.sh`) but is **not** the current path.
+
+<details><summary>Docker bring-up (deferred — reference only)</summary>
 
 ```bash
 cd tests/conformance
-
-# 1) Vendor + build the suite (it builds from source; pin a release tag, not master).
 git clone https://gitlab.com/openid/conformance-suite.git ./conformance-suite
-cd ./conformance-suite && git checkout <release-tag>     # see the suite's releases
-#    build the jar + images per the suite's own README (mvn package, then its image build)
-cd ..
-
-# 2) TLS cert for the OP.
+cd ./conformance-suite && git checkout <release-tag> && cd ..   # pin a release, not master
 ./certs/generate-certs.sh
-
-# 3) Make the suite TRUST the OP cert (see TLS below) — REQUIRED or discovery over https fails.
-
-# 4) Boot everything.
+# Make the suite TRUST certs/op-cert.pem (JVM truststore server-side + the browser) — the #1
+# friction point of this path; the tunnel path avoids it entirely with a real CA cert.
 docker compose up --build
-
-# 5) Seed.
-./seed/seed-conformance.sh
+./seed/seed-conformance.sh    # seeds with --redirect-base https://localhost.emobix.co.uk:8443
 ```
-
-## TLS (the #1 friction point)
-
-The OP serves **https** with a self-signed cert (SAN `DNS:rufistoward-op`). The suite will reject it until
-it trusts `certs/op-cert.pem` in **both** places it talks to the OP:
-
-- **Server-to-server (Java):** add `op-cert.pem` to the suite `server` container's truststore (mount the
-  PEM and import into the JVM cacerts, or use the suite's documented CA-injection path). **TODO: confirm the
-  exact mount/import the pinned suite release expects.**
-- **Browser:** the automated browser must also trust the cert. **TODO: confirm whether the pinned release
-  runs the browser server-side (needs CA in that container) or expects an external driver.**
-
-If trust is impractical, the fallback is to terminate the OP behind the suite's `nginx` with a cert it
-already trusts — heavier; prefer direct trust first.
-
-## Running the plans (Task 4 — not scaffolded)
-
-`config` first (no browser — a topology smoke test), then `basic`:
-
-- **Interactive:** open `https://localhost.emobix.co.uk:8443`, create a test plan
-  (`oidcc-config-certification-test-plan`, then `oidcc-basic-certification-test-plan` with variants
-  `server_metadata=discovery`, `client_registration=static_client`), paste the matching
-  `config/test-plans/*.json`, run.
-- **Headless/CI:** drive the suite REST API or `scripts/run-test-plan.py`. The suite runs with
-  `--fintechlabs.devmode=true` (no API token needed locally). Export the JSON+HTML bundle to
-  `_bmad-output/test-artifacts/conformance/{YYYY-MM-DD}/`.
-
-**Verify the `basic` plan interactively before enabling the `browser` automation** — the
-`config/test-plans/rufistoward-basic.json` BrowserControl block is a template; confirm its command syntax
-against the suite's `Design/BrowserControl` wiki.
+Issuer is the container DNS `https://rufistoward-op:5001`; suite UI at `https://localhost.emobix.co.uk:8443`.
+Re-seed the client with the emobix redirect base (`seed-conformance --redirect-base
+https://localhost.emobix.co.uk:8443`) since the default base targets the hosted suite.
+</details>
 
 ## Deferred to v1.1 (verified reasons)
 

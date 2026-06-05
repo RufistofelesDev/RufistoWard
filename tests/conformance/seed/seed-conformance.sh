@@ -30,13 +30,14 @@ echo "==> Seeding the conformance client + login test user via the seed-conforma
 # scopes 'openid profile email', and the suite's two callback redirect URIs; plus a
 # login-able test user (testuser@conformance.local / Conformance!1).
 #
+# This is the DEFERRED docker self-host path (Story 10.5a): the suite UI is the local
+# emobix host, so override the default redirect base (which targets the HOSTED suite).
 # A CLI command (not POST /api/admin/clients) is required because the Admin API generates
 # the client_id server-side and cannot pin the stable id the static-client test config needs.
 # Idempotent: re-running skips fixtures that already exist and still exits 0.
 docker compose exec -T rufistoward-op \
-  dotnet RufistoWard.Host.dll seed-conformance
+  dotnet RufistoWard.Host.dll seed-conformance --redirect-base https://localhost.emobix.co.uk:8443
 
 echo
 echo "==> Conformance fixtures seeded. Client/user values are defined in"
-echo "    src/RufistoWard.Host/Commands/SeedConformanceCommand.cs and must stay in lock-step"
-echo "    with ./config/test-plans/rufistoward-basic.json (client block + //redirect1/2)."
+echo "    src/RufistoWard.Host/Commands/SeedConformanceCommand.cs."

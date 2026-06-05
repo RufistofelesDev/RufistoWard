@@ -1,9 +1,11 @@
 {
   "//": "Suite test config for oidcc-config-certification-test-plan (variant: server_metadata=discovery).",
   "//_": "Config plan validates the discovery document + JWKS only — no flow, no browser. Run this first.",
+  "//tunnel": "TUNNEL-FIRST (Story 10.5): replace YOUR-TUNNEL-HOST with the live public tunnel hostname",
+  "//tunnel_": "that fronts the local OP (cloudflared/ngrok-reserved). This file is a TEMPLATE — the URL is per-run.",
   "alias": "rufistoward-config",
   "description": "RufistoWard OIDC — Config certification profile",
   "server": {
-    "discoveryUrl": "https://rufistoward-op:5001/.well-known/openid-configuration"
+    "discoveryUrl": "https://YOUR-TUNNEL-HOST/.well-known/openid-configuration"
   }
 }

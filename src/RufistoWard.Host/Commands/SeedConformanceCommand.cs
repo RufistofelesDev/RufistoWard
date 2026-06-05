@@ -9,7 +9,7 @@ using RufistoWard.Identity.Interfaces;
 /// Seeds the deterministic OpenID Foundation conformance fixtures (Story 10.5): a static
 /// confidential client with a known <c>client_id</c>/<c>client_secret</c> and a login-able test
 /// user. The Admin API cannot pin a stable <c>client_id</c> (it is server-generated), so the
-/// static-client conformance configs rely on this command for reproducible nightly runs.
+/// static-client conformance configs rely on this command for reproducible runs.
 /// Idempotent: re-running skips fixtures that already exist and still returns success.
 /// </summary>
 public static class SeedConformanceCommand
@@ -26,16 +26,35 @@ public static class SeedConformanceCommand
     public static readonly string[] GrantTypes = ["authorization_code", "refresh_token"];
     public static readonly string[] Scopes = ["openid", "profile", "email"];
 
-    // The conformance suite registers two callback URIs per alias (one bare, one with dummy params).
-    // Keep these in lock-step with rufistoward-basic.json (//redirect1, //redirect2).
-    public static readonly string[] RedirectUris =
-    [
-        "https://localhost.emobix.co.uk:8443/test/a/rufistoward-basic/callback",
-        "https://localhost.emobix.co.uk:8443/test/a/rufistoward-basic/callback?dummy1=lorem&dummy2=ipsum",
-    ];
+    // The suite alias drives the callback path: {base}/test/a/{alias}/callback.
+    public const string Alias = "rufistoward-basic";
+
+    // Tunnel-first (Story 10.5): the HOSTED OIDF suite is the primary target. The self-hosted
+    // (docker-compose) suite uses the emobix wildcard host and is the deferred path (10.5a).
+    public const string HostedSuiteRedirectBase = "https://www.certification.openid.net";
+    public const string SelfHostedSuiteRedirectBase = "https://localhost.emobix.co.uk:8443";
+    public const string DefaultRedirectBase = HostedSuiteRedirectBase;
+
+    // Override precedence: --redirect-base <url>  >  CONFORMANCE_REDIRECT_BASE env  >  default.
+    private const string RedirectBaseEnvVar = "CONFORMANCE_REDIRECT_BASE";
+
+    /// <summary>
+    /// The suite registers two callback URIs per alias (one bare, one with dummy query params).
+    /// Built from the redirect base so the same command serves the hosted and self-hosted suites.
+    /// </summary>
+    public static string[] BuildRedirectUris(string redirectBase)
+    {
+        var callback = $"{redirectBase.TrimEnd('/')}/test/a/{Alias}/callback";
+        return [callback, $"{callback}?dummy1=lorem&dummy2=ipsum"];
+    }
+
+    /// <summary>Redirect URIs for the default (hosted) suite — convenience for callers/tests.</summary>
+    public static string[] DefaultRedirectUris => BuildRedirectUris(DefaultRedirectBase);
 
     public static async Task<int> ExecuteAsync(IServiceProvider services, string[] args)
     {
+        var redirectBase = ResolveRedirectBase(args);
+
         using var scope = services.CreateScope();
         var clientRepository = scope.ServiceProvider.GetRequiredService<IClientRepository>();
         var userRepository = scope.ServiceProvider.GetRequiredService<IUserRepository>();
@@ -44,8 +63,8 @@ public static class SeedConformanceCommand
         var existingClient = await clientRepository.FindByClientIdAsync(ConformanceClientId);
         if (existingClient is null)
         {
-            await clientRepository.AddAsync(BuildClient());
-            Console.WriteLine($"Conformance client created: {ConformanceClientId}");
+            await clientRepository.AddAsync(BuildClient(redirectBase));
+            Console.WriteLine($"Conformance client created: {ConformanceClientId} (redirect base: {redirectBase})");
         }
         else
         {
@@ -68,16 +87,17 @@ public static class SeedConformanceCommand
 
     /// <summary>
     /// Builds the static confidential conformance client: PKCE-enforced authorization-code +
-    /// refresh-token grants, the standard OIDC scopes, both suite callbacks, and a known secret
-    /// hashed the same way <c>ClientAuthenticator</c> verifies it.
+    /// refresh-token grants, the standard OIDC scopes, both suite callbacks (derived from
+    /// <paramref name="redirectBase"/>), and a known secret hashed the same way
+    /// <c>ClientAuthenticator</c> verifies it.
     /// </summary>
-    public static Client BuildClient()
+    public static Client BuildClient(string redirectBase)
     {
         var client = Client.Create(ConformanceClientId, "OIDF Conformance — Basic", requireClientSecret: true);
 
         foreach (var grantType in GrantTypes)
             client.AddGrantType(grantType);
-        foreach (var uri in RedirectUris)
+        foreach (var uri in BuildRedirectUris(redirectBase))
             client.AddRedirectUri(uri);
         foreach (var scope in Scopes)
             client.AddScope(scope);
@@ -85,6 +105,22 @@ public static class SeedConformanceCommand
         client.AddSecret(HashSecret(ConformanceClientSecret), description: "Conformance static secret");
 
         return client;
+    }
+
+    /// <summary>
+    /// Resolves the suite callback base: <c>--redirect-base &lt;url&gt;</c> arg, then the
+    /// <c>CONFORMANCE_REDIRECT_BASE</c> env var, then the default (hosted) suite.
+    /// </summary>
+    private static string ResolveRedirectBase(string[] args)
+    {
+        for (int i = 1; i < args.Length - 1; i++)
+        {
+            if (args[i] == "--redirect-base")
+                return args[i + 1];
+        }
+
+        var fromEnv = Environment.GetEnvironmentVariable(RedirectBaseEnvVar);
+        return string.IsNullOrWhiteSpace(fromEnv) ? DefaultRedirectBase : fromEnv;
     }
 
     /// <summary>Builds the login-able conformance test user with a verified email.</summary>

@@ -86,7 +86,44 @@ public sealed class SeedConformanceCommandTests
         Assert.Contains("email", scopes);
 
         var redirectUris = client.RedirectUris.Select(r => r.Uri).ToArray();
-        foreach (var expected in SeedConformanceCommand.RedirectUris)
+        foreach (var expected in SeedConformanceCommand.DefaultRedirectUris)
+        {
+            Assert.Contains(expected, redirectUris);
+        }
+    }
+
+    [Fact]
+    public void BuildRedirectUris_DerivesBothSuiteCallbacks_FromBase()
+    {
+        var uris = SeedConformanceCommand.BuildRedirectUris("https://example.test:8443/");
+
+        Assert.Equal(
+        [
+            "https://example.test:8443/test/a/rufistoward-basic/callback",
+            "https://example.test:8443/test/a/rufistoward-basic/callback?dummy1=lorem&dummy2=ipsum",
+        ],
+            uris);
+    }
+
+    [Fact]
+    public async Task Seed_RedirectBaseFlag_OverridesDefault()
+    {
+        using var factory = CreateFactory();
+
+        // Self-hosted (docker-compose) base instead of the default hosted suite.
+        await SeedConformanceCommand.ExecuteAsync(
+            factory.Services,
+            ["seed-conformance", "--redirect-base", SeedConformanceCommand.SelfHostedSuiteRedirectBase]);
+
+        using var scope = factory.Services.CreateScope();
+        var repo = scope.ServiceProvider.GetRequiredService<IClientRepository>();
+        var client = await repo.FindByClientIdAsync(
+            SeedConformanceCommand.ConformanceClientId, TestContext.Current.CancellationToken);
+
+        Assert.NotNull(client);
+        var redirectUris = client.RedirectUris.Select(r => r.Uri).ToArray();
+        foreach (var expected in SeedConformanceCommand.BuildRedirectUris(
+            SeedConformanceCommand.SelfHostedSuiteRedirectBase))
         {
             Assert.Contains(expected, redirectUris);
         }
@@ -152,6 +189,6 @@ public sealed class SeedConformanceCommandTests
         Assert.NotNull(client);
         // No duplicate secrets/redirects from the second run.
         Assert.Single(client.Secrets);
-        Assert.Equal(SeedConformanceCommand.RedirectUris.Length, client.RedirectUris.Count);
+        Assert.Equal(SeedConformanceCommand.DefaultRedirectUris.Length, client.RedirectUris.Count);
     }
 }

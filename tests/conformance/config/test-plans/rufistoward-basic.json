@@ -1,14 +1,15 @@
 {
   "//": "Suite test config for oidcc-basic-certification-test-plan",
   "//_": "(variants: server_metadata=discovery, client_registration=static_client).",
-  "//__": "VERIFY the `browser` command syntax against the suite's Design/BrowserControl wiki —",
-  "//___": "the command-tuple form below is a STARTING TEMPLATE, not yet run. Confirm interactively first.",
+  "//tunnel": "TUNNEL-FIRST (Story 10.5): this file is a TEMPLATE. Replace YOUR-TUNNEL-HOST with the live",
+  "//tunnel_": "public tunnel hostname fronting the local OP (cloudflared/ngrok-reserved). Verify the `browser`",
+  "//tunnel__": "command syntax against the suite's Design/BrowserControl wiki; confirm interactively first.",
 
   "alias": "rufistoward-basic",
   "description": "RufistoWard OIDC — Basic certification profile",
 
   "server": {
-    "discoveryUrl": "https://rufistoward-op:5001/.well-known/openid-configuration"
+    "discoveryUrl": "https://YOUR-TUNNEL-HOST/.well-known/openid-configuration"
   },
 
   "client": {
@@ -16,17 +17,18 @@
     "client_secret": "conformance-basic-secret"
   },
 
-  "//redirects": "The suite registers two callback URIs for the alias. Seed BOTH on the client (Task 2):",
-  "//redirect1": "https://localhost.emobix.co.uk:8443/test/a/rufistoward-basic/callback",
-  "//redirect2": "https://localhost.emobix.co.uk:8443/test/a/rufistoward-basic/callback?dummy1=lorem&dummy2=ipsum",
+  "//redirects": "Seeded by `seed-conformance` (default base = the HOSTED suite). The suite registers two",
+  "//redirect1": "https://www.certification.openid.net/test/a/rufistoward-basic/callback",
+  "//redirect2": "https://www.certification.openid.net/test/a/rufistoward-basic/callback?dummy1=lorem&dummy2=ipsum",
+  "//redirects_": "For the deferred docker path, re-seed with --redirect-base https://localhost.emobix.co.uk:8443",
 
   "browser": [
     {
-      "match": "https://rufistoward-op:5001/connect/authorize*",
+      "match": "https://YOUR-TUNNEL-HOST/connect/authorize*",
       "tasks": [
         {
           "task": "Login",
-          "match": "https://rufistoward-op:5001/Login*",
+          "match": "https://YOUR-TUNNEL-HOST/Login*",
           "commands": [
             ["text", "id", "username", "testuser@conformance.local"],
             ["text", "id", "password", "Conformance!1"],
