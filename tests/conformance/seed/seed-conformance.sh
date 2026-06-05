@@ -24,18 +24,19 @@ docker compose exec -T rufistoward-op \
   || echo "   (admin may already exist — continuing)"
 
 echo
-echo "==> TODO (Task 2): seed the conformance client + scopes + test user."
-echo "    Two grounded options:"
-echo "    A) RECOMMENDED — add a 'seed-conformance' CLI command (mirror SeedAdminCommand)"
-echo "       so it creates a client with a KNOWN client_id/secret deterministically:"
-echo "         docker compose exec -T rufistoward-op dotnet RufistoWard.Host.dll seed-conformance"
-echo "       Needed because POST /api/admin/clients (CreateClientRequest: ClientName,"
-echo "       GrantTypes[], RedirectUris[], AllowedScopes[], RequireClientSecret) does NOT"
-echo "       accept a client_id — the server generates it, so the API path can't pin a"
-echo "       stable client_id/secret for the static-client test config."
-echo "    B) Admin API — cookie-login as admin (POST /login: UsernameOrEmail, Password),"
-echo "       then POST /api/admin/clients and capture the generated ClientId/secret from"
-echo "       the response into ./config/test-plans/*.json. Scopes via /api/admin/scopes."
+echo "==> Seeding the conformance client + login test user via the seed-conformance CLI command..."
+# Deterministic fixtures (Story 10.5 Task 2): a static confidential client with a KNOWN
+# client_id/secret (conformance-basic / conformance-basic-secret), code grant + PKCE,
+# scopes 'openid profile email', and the suite's two callback redirect URIs; plus a
+# login-able test user (testuser@conformance.local / Conformance!1).
+#
+# A CLI command (not POST /api/admin/clients) is required because the Admin API generates
+# the client_id server-side and cannot pin the stable id the static-client test config needs.
+# Idempotent: re-running skips fixtures that already exist and still exits 0.
+docker compose exec -T rufistoward-op \
+  dotnet RufistoWard.Host.dll seed-conformance
+
 echo
-echo "    Conformance client must have: code grant + PKCE, scopes 'openid profile email',"
-echo "    redirect URIs = the suite callbacks (see ./config/test-plans/rufistoward-basic.json)."
+echo "==> Conformance fixtures seeded. Client/user values are defined in"
+echo "    src/RufistoWard.Host/Commands/SeedConformanceCommand.cs and must stay in lock-step"
+echo "    with ./config/test-plans/rufistoward-basic.json (client block + //redirect1/2)."

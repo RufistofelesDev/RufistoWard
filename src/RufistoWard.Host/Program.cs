@@ -40,6 +40,7 @@ if (args.Length > 0)
     var exitCode = args[0] switch
     {
         "seed-admin" => await SeedAdminCommand.ExecuteAsync(app.Services, args),
+        "seed-conformance" => await SeedConformanceCommand.ExecuteAsync(app.Services, args),
         "migrate" => await MigrateCommand.ExecuteAsync(app.Services),
         "is4-migrate" => await Is4MigrateCommand.ExecuteAsync(app.Services, args),
         _ => -1,

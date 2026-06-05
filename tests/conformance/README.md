@@ -3,10 +3,12 @@
 Runs RufistoWard against the [OpenID Foundation conformance suite](https://gitlab.com/openid/conformance-suite)
 for the **Basic** and **Config** OP certification profiles (Story 10.5).
 
-> **Status: Task 1 scaffold.** The compose topology, OP image, TLS, and config templates are in
-> place. Seeding the conformance client (Task 2), the headless runner (Task 4), and the nightly
-> `conformance.yml` workflow (Task 5) are not done yet. Lines marked **TODO** below need a real
-> `docker compose up` to finalize — nothing here has been executed end-to-end.
+> **Status: Tasks 1–2 done (code/config); Docker-dependent steps pending.** The compose topology,
+> OP image, TLS, and config templates are in place, and the `seed-conformance` CLI command now
+> seeds the static client + login test user deterministically (Task 2, unit-tested). The headless
+> runner (Task 4) and the nightly `conformance.yml` workflow (Task 5) are not done yet. Lines marked
+> **TODO** below need a real `docker compose up` to finalize — the stack has not been booted
+> end-to-end (no Docker on the authoring machine).
 
 ## Topology (why it's shaped this way)
 
@@ -32,7 +34,7 @@ docker compose project (one network)
 | `../../src/RufistoWard.Host/Dockerfile` | OP image (Tailwind skipped — cosmetic) |
 | `config/appsettings.Conformance.json` | OP config: issuer, Postgres, auto-migrate, RSA key, relaxed rate limits |
 | `certs/generate-certs.sh` | self-signed TLS cert for `rufistoward-op` (op.pfx + op-cert.pem) |
-| `seed/seed-conformance.sh` | seeds admin user (works); conformance client (**TODO Task 2**) |
+| `seed/seed-conformance.sh` | seeds admin user + conformance client/test user via the `seed-conformance` CLI command |
 | `config/test-plans/rufistoward-config.json` | suite config for the **config** plan (discovery only) |
 | `config/test-plans/rufistoward-basic.json` | suite config for the **basic** plan (incl. BrowserControl login) |
 
@@ -100,4 +102,8 @@ against the suite's `Design/BrowserControl` wiki.
   discovery `/.well-known/openid-configuration`. Login page route `/Login`.
 - Login form selectors: `#username`, `#password`, submit `[data-testid="login-button"]`. No consent screen.
 - Issuer config key: `Token:Issuer`. Schema built on boot via `Database:AutoMigrateOnStartup=true`.
-- Admin user seeded by the `seed-admin` CLI command; **no** CLI command seeds clients/scopes yet (Task 2).
+- Admin user seeded by the `seed-admin` CLI command; the conformance client + login test user are
+  seeded deterministically by the `seed-conformance` CLI command (client `conformance-basic`, secret
+  `conformance-basic-secret`, user `testuser@conformance.local` / `Conformance!1`). Scopes are not
+  DB-backed — discovery advertises `openid profile email` statically and the authorize/token flow
+  passes scopes through, so no scope seeding is needed.
