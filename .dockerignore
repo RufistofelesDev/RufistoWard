@@ -1,0 +1,17 @@
+# Docker build context = repo root (see src/RufistoWard.Host/Dockerfile).
+# Keep the context small and deterministic.
+**/bin/
+**/obj/
+**/.vs/
+.git/
+.github/
+.agents/
+.claude/
+_bmad/
+_bmad-output/
+tests/
+docs/
+tools/
+**/*.user
+**/node_modules/
+**/.DS_Store

@@ -1,0 +1,11 @@
+# Vendored OpenID Foundation conformance suite — cloned + built separately (see README).
+conformance-suite/
+
+# Generated TLS material — regenerate with certs/generate-certs.sh
+certs/op-key.pem
+certs/op-cert.pem
+certs/op.pfx
+
+# Local result bundles (nightly CI archives the canonical copy under
+# _bmad-output/test-artifacts/conformance/{YYYY-MM-DD}/).
+results/

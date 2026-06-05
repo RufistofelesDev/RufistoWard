@@ -1,0 +1,39 @@
+{
+  "//": "Suite test config for oidcc-basic-certification-test-plan",
+  "//_": "(variants: server_metadata=discovery, client_registration=static_client).",
+  "//__": "VERIFY the `browser` command syntax against the suite's Design/BrowserControl wiki —",
+  "//___": "the command-tuple form below is a STARTING TEMPLATE, not yet run. Confirm interactively first.",
+
+  "alias": "rufistoward-basic",
+  "description": "RufistoWard OIDC — Basic certification profile",
+
+  "server": {
+    "discoveryUrl": "https://rufistoward-op:5001/.well-known/openid-configuration"
+  },
+
+  "client": {
+    "client_id": "conformance-basic",
+    "client_secret": "conformance-basic-secret"
+  },
+
+  "//redirects": "The suite registers two callback URIs for the alias. Seed BOTH on the client (Task 2):",
+  "//redirect1": "https://localhost.emobix.co.uk:8443/test/a/rufistoward-basic/callback",
+  "//redirect2": "https://localhost.emobix.co.uk:8443/test/a/rufistoward-basic/callback?dummy1=lorem&dummy2=ipsum",
+
+  "browser": [
+    {
+      "match": "https://rufistoward-op:5001/connect/authorize*",
+      "tasks": [
+        {
+          "task": "Login",
+          "match": "https://rufistoward-op:5001/Login*",
+          "commands": [
+            ["text", "id", "username", "testuser@conformance.local"],
+            ["text", "id", "password", "Conformance!1"],
+            ["click", "css", "[data-testid=login-button]"]
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,58 @@
+# RufistoWard OIDF conformance harness.
+#
+#   docker compose up --build
+#
+# Brings up: the OpenID Foundation conformance suite (server + nginx + mongodb,
+# pulled in via `include` from the vendored ./conformance-suite/), plus a RufistoWard
+# OP (rufistoward-op) and its Postgres. All services share this compose project's
+# default network, so the suite reaches the OP at https://rufistoward-op:5001 by
+# container DNS — the SAME url used as the OP issuer (server-to-server AND browser).
+#
+# ── ONE-TIME SETUP (the suite builds from source — see README for the canonical steps) ──
+#   1) git clone https://gitlab.com/openid/conformance-suite.git ./conformance-suite
+#      cd ./conformance-suite && git checkout <release-tag>   # pin a release, not master
+#   2) build the suite jar + images per its README (mvn package, then its docker build)
+#   3) ../certs/generate-certs.sh          # TLS cert for rufistoward-op
+#   4) make the suite trust ../certs/op-cert.pem  (README › TLS)
+#   5) docker compose up --build
+#   6) seed: ../seed/seed-conformance.sh   (admin user + conformance client/scopes)
+#
+# The suite UI is then at https://localhost.emobix.co.uk:8443 (a hostname that resolves
+# to 127.0.0.1; the suite ships a valid cert for it). Run the plans from there or via
+# ../runner (Task 4, not part of this scaffold).
+
+include:
+  # Vendored OIDF suite compose. Defines services: server, nginx (8443), mongodb.
+  # Build contexts resolve relative to this included file. Requires the one-time build above.
+  - path: ./conformance-suite/docker-compose.yml
+
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_PASSWORD: conformance
+      POSTGRES_DB: rufistoward_conformance
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d rufistoward_conformance"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    # No published port — only the OP needs it, over the internal network.
+
+  rufistoward-op:
+    build:
+      context: ../..                                   # repo root
+      dockerfile: src/RufistoWard.Host/Dockerfile
+    environment:
+      ASPNETCORE_ENVIRONMENT: Conformance
+      ASPNETCORE_URLS: "https://+:5001"
+      ASPNETCORE_Kestrel__Certificates__Default__Path: /https/op.pfx
+      ASPNETCORE_Kestrel__Certificates__Default__Password: conformance
+    volumes:
+      # ASP.NET auto-loads appsettings.Conformance.json from the content root.
+      - ./config/appsettings.Conformance.json:/app/appsettings.Conformance.json:ro
+      - ./certs/op.pfx:/https/op.pfx:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+    # Reachable in-network as https://rufistoward-op:5001 (matches Token:Issuer).
