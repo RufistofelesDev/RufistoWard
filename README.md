@@ -209,11 +209,11 @@ src/
 ## Testing
 
 ```bash
-# Run all 120 tests
+# Run all 187 tests (xUnit v3 + Microsoft Testing Platform — `dotnet test` does NOT run these)
 dotnet run --project tests/RufistoWard.Domain.Tests         # 57 tests
-dotnet run --project tests/RufistoWard.Application.Tests     # 11 tests
-dotnet run --project tests/RufistoWard.Infrastructure.Tests  # 4 tests
-dotnet run --project tests/RufistoWard.Host.Tests            # 48 tests
+dotnet run --project tests/RufistoWard.Application.Tests     # 16 tests
+dotnet run --project tests/RufistoWard.Infrastructure.Tests  # 24 tests
+dotnet run --project tests/RufistoWard.Host.Tests            # 90 tests
 ```
 
 Tests use an in-memory database and do not require PostgreSQL or SQL Server to be running.
