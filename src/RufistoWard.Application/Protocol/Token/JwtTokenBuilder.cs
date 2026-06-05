@@ -16,6 +16,7 @@ public sealed class JwtTokenBuilder(ISigningKeyRepository signingKeyRepository) 
             ["iss"] = context.Issuer,
             ["sub"] = context.Subject,
             ["aud"] = context.ClientId,
+            ["client_id"] = context.ClientId, // RFC 9068 §2.2 — REQUIRED on JWT access tokens.
             ["exp"] = now.AddSeconds(context.LifetimeSeconds).ToUnixTimeSeconds(),
             ["nbf"] = now.ToUnixTimeSeconds(),
             ["iat"] = now.ToUnixTimeSeconds(),

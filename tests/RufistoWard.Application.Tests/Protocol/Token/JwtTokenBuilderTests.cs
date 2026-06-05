@@ -48,6 +48,54 @@ public sealed class JwtTokenBuilderTests
     }
 
     [Fact]
+    public async Task BuildAccessToken_IncludesClientIdClaim_PerRfc9068()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var builder = new JwtTokenBuilder(new FakeSigningKeyRepository());
+
+        var context = new TokenBuildContext
+        {
+            Subject = "user-123",
+            ClientId = "test-client",
+            Issuer = "https://localhost:5001",
+            LifetimeSeconds = 3600,
+            Scopes = ["openid"],
+        };
+
+        var jwt = await builder.BuildAccessTokenAsync(context, ct);
+        var payload = JsonSerializer.Deserialize<JsonElement>(
+            Encoding.UTF8.GetString(Base64UrlDecode(jwt.Split('.')[1])));
+
+        // RFC 9068 §2.2 — client_id is REQUIRED on JWT access tokens.
+        Assert.True(payload.TryGetProperty("client_id", out var clientId));
+        Assert.Equal("test-client", clientId.GetString());
+    }
+
+    [Fact]
+    public async Task BuildIdToken_DoesNotIncludeClientIdClaim()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var builder = new JwtTokenBuilder(new FakeSigningKeyRepository());
+
+        var context = new TokenBuildContext
+        {
+            Subject = "user-123",
+            ClientId = "test-client",
+            Issuer = "https://localhost:5001",
+            LifetimeSeconds = 3600,
+            Scopes = ["openid"],
+        };
+
+        var accessToken = await builder.BuildAccessTokenAsync(context, ct);
+        var idToken = await builder.BuildIdTokenAsync(context, accessToken, ct);
+        var payload = JsonSerializer.Deserialize<JsonElement>(
+            Encoding.UTF8.GetString(Base64UrlDecode(idToken.Split('.')[1])));
+
+        // client_id is an access-token claim (RFC 9068), not an id_token claim (OIDC Core).
+        Assert.False(payload.TryGetProperty("client_id", out _));
+    }
+
+    [Fact]
     public async Task BuildIdToken_IncludesAtHash()
     {
         var ct = TestContext.Current.CancellationToken;
@@ -80,8 +128,12 @@ public sealed class JwtTokenBuilderTests
         var padded = input.Replace('-', '+').Replace('_', '/');
         switch (padded.Length % 4)
         {
-            case 2: padded += "=="; break;
-            case 3: padded += "="; break;
+            case 2:
+                padded += "==";
+                break;
+            case 3:
+                padded += "=";
+                break;
         }
         return Convert.FromBase64String(padded);
     }

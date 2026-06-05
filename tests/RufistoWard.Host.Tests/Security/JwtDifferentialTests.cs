@@ -178,14 +178,11 @@ public sealed class JwtDifferentialTests : IAsyncLifetime
         // Spot-check the OIDC-required claims that matter most for an access token.
         Assert.Equal(Issuer, result.Claims["iss"].ToString());
         Assert.Equal(TestClientId, result.Claims["sub"].ToString());
-        // RufistoWard's access tokens do not (yet) emit a separate client_id claim;
-        // RFC 9068 §2.2 makes it REQUIRED — tracked separately as a conformance gap.
-        // Until then, tolerate its absence and fall back to sub (the client is the subject in M2M).
-        // NOTE: Dictionary's indexer throws on a missing key, so probe with TryGetValue.
-        var clientIdClaim = result.Claims.TryGetValue("client_id", out var clientIdValue)
-            ? clientIdValue?.ToString()
-            : result.Claims["sub"].ToString();
-        Assert.Equal(TestClientId, clientIdClaim);
+        // RFC 9068 §2.2 makes client_id REQUIRED on JWT access tokens (Story 10.2b).
+        Assert.True(
+            result.Claims.TryGetValue("client_id", out var clientIdValue),
+            "RFC 9068 §2.2 requires the client_id claim on access tokens");
+        Assert.Equal(TestClientId, clientIdValue?.ToString());
     }
 
     private static Dictionary<string, string?> ParseServerClaims(string jwt)
