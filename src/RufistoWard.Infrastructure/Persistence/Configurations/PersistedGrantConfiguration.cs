@@ -16,9 +16,11 @@ public sealed class PersistedGrantConfiguration : IEntityTypeConfiguration<Persi
         builder.Property(g => g.SubjectId).HasMaxLength(200);
         builder.Property(g => g.ClientId).HasMaxLength(200).IsRequired();
         builder.Property(g => g.Data).IsRequired();
+        builder.Property(g => g.FamilyId).IsRequired();
 
         builder.HasIndex(g => g.SubjectId).HasDatabaseName("IX_PersistedGrants_SubjectId");
         builder.HasIndex(g => g.ClientId).HasDatabaseName("IX_PersistedGrants_ClientId");
         builder.HasIndex(g => g.Expiration).HasDatabaseName("IX_PersistedGrants_Expiration");
+        builder.HasIndex(g => new { g.FamilyId, g.ConsumedAt }).HasDatabaseName("IX_PersistedGrants_FamilyId_ConsumedAt");
     }
 }

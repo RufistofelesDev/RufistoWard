@@ -40,8 +40,9 @@ public sealed class PersistedGrantRepositoryTests : IDisposable
         string clientId = "client-1",
         string? subjectId = "subject-1",
         string data = "payload",
-        DateTime? expiration = null)
-        => PersistedGrant.Create(id, type, clientId, subjectId, data, expiration);
+        DateTime? expiration = null,
+        Guid? familyIdOverride = null)
+        => PersistedGrant.Create(id, type, clientId, subjectId, data, expiration, familyIdOverride);
 
     [Fact]
     public async Task AddAsync_ThenFindById_RoundTripsByHandle()
@@ -183,6 +184,88 @@ public sealed class PersistedGrantRepositoryTests : IDisposable
         Assert.Null(await reader.FindByIdAsync("expired", ct));
         Assert.NotNull(await reader.FindByIdAsync("active", ct));
         Assert.NotNull(await reader.FindByIdAsync("eternal", ct));
+    }
+
+    [Fact]
+    public async Task AddAsync_ThenFindById_RoundTripsFamilyId()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var familyId = Guid.Parse("11111111-1111-1111-1111-111111111111");
+        await new PersistedGrantRepository(NewContext())
+            .AddAsync(PersistedGrant.Create("fam-rt", "refresh_token", "client-1", "subject-1", "payload", familyId: familyId), ct);
+
+        var loaded = await new PersistedGrantRepository(NewContext()).FindByIdAsync("fam-rt", ct);
+
+        Assert.NotNull(loaded);
+        Assert.Equal(familyId, loaded.FamilyId);
+    }
+
+    [Fact]
+    public async Task Create_WithoutFamilyId_StampsDistinctFamilies()
+    {
+        // Each root grant must get its own family so reuse of one cannot revoke an unrelated chain.
+        var a = PersistedGrant.Create("a", "refresh_token", "c", "s", "d");
+        var b = PersistedGrant.Create("b", "refresh_token", "c", "s", "d");
+
+        Assert.NotEqual(Guid.Empty, a.FamilyId);
+        Assert.NotEqual(a.FamilyId, b.FamilyId);
+        await Task.CompletedTask;
+    }
+
+    [Fact]
+    public async Task RevokeFamilyAsync_RevokesEntireFamily_ReturnsCount()
+    {
+        // Fulfils the Story 10.4b tripwire at the persistence layer: revoking by family consumes
+        // every unconsumed grant sharing the FamilyId in a single operation.
+        var ct = TestContext.Current.CancellationToken;
+        var family = Guid.NewGuid();
+        var writer = new PersistedGrantRepository(NewContext());
+        await writer.AddAsync(NewGrant("f1", familyIdOverride: family), ct);
+        await writer.AddAsync(NewGrant("f2", familyIdOverride: family), ct);
+        await writer.AddAsync(NewGrant("f3", familyIdOverride: family), ct);
+
+        var revoked = await new PersistedGrantRepository(NewContext()).RevokeFamilyAsync(family, ct);
+
+        Assert.Equal(3, revoked);
+        var reader = new PersistedGrantRepository(NewContext());
+        foreach (var id in new[] { "f1", "f2", "f3" })
+        {
+            var g = await reader.FindByIdAsync(id, ct);
+            Assert.True(g!.IsConsumed);
+        }
+    }
+
+    [Fact]
+    public async Task RevokeFamilyAsync_LeavesOtherFamiliesUntouched()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var target = Guid.NewGuid();
+        var other = Guid.NewGuid();
+        var writer = new PersistedGrantRepository(NewContext());
+        await writer.AddAsync(NewGrant("t1", familyIdOverride: target), ct);
+        await writer.AddAsync(NewGrant("o1", familyIdOverride: other), ct);
+
+        await new PersistedGrantRepository(NewContext()).RevokeFamilyAsync(target, ct);
+
+        var reader = new PersistedGrantRepository(NewContext());
+        Assert.True((await reader.FindByIdAsync("t1", ct))!.IsConsumed);
+        Assert.False((await reader.FindByIdAsync("o1", ct))!.IsConsumed);
+    }
+
+    [Fact]
+    public async Task RevokeFamilyAsync_SecondCall_IsNoOp_ReturnsZero()
+    {
+        // Idempotent / concurrent-reuse safe: only unconsumed grants are counted, so a repeat
+        // revoke of the same family revokes nothing.
+        var ct = TestContext.Current.CancellationToken;
+        var family = Guid.NewGuid();
+        await new PersistedGrantRepository(NewContext()).AddAsync(NewGrant("c1", familyIdOverride: family), ct);
+
+        var first = await new PersistedGrantRepository(NewContext()).RevokeFamilyAsync(family, ct);
+        var second = await new PersistedGrantRepository(NewContext()).RevokeFamilyAsync(family, ct);
+
+        Assert.Equal(1, first);
+        Assert.Equal(0, second);
     }
 
     [Fact]

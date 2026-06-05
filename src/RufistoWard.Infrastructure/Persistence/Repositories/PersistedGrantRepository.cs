@@ -43,4 +43,12 @@ public sealed class PersistedGrantRepository(RufistoWardDbContext context) : IPe
             .Where(g => g.Expiration != null && g.Expiration < DateTime.UtcNow)
             .ExecuteDeleteAsync(cancellationToken);
     }
+
+    public async Task<int> RevokeFamilyAsync(Guid familyId, CancellationToken cancellationToken = default)
+    {
+        var now = DateTime.UtcNow;
+        return await context.PersistedGrants
+            .Where(g => g.FamilyId == familyId && g.ConsumedAt == null)
+            .ExecuteUpdateAsync(s => s.SetProperty(g => g.ConsumedAt, now), cancellationToken);
+    }
 }

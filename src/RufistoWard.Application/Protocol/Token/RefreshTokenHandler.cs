@@ -1,6 +1,7 @@
 namespace RufistoWard.Auth.Protocol.Token;
 
 using System.Text.Json;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using RufistoWard.Auth.Protocol.Common;
 using RufistoWard.Auth.Protocol.Discovery;
@@ -12,7 +13,8 @@ public sealed class RefreshTokenHandler(
     IPersistedGrantRepository grantRepository,
     IClientAuthenticator clientAuthenticator,
     ITokenBuilder tokenBuilder,
-    IOptions<DiscoveryOptions> discoveryOptions) : ITokenRequestHandler
+    IOptions<DiscoveryOptions> discoveryOptions,
+    ILogger<RefreshTokenHandler> logger) : ITokenRequestHandler
 {
     public string GrantType => "refresh_token";
 
@@ -42,6 +44,13 @@ public sealed class RefreshTokenHandler(
 
         if (grant.IsConsumed)
         {
+            // Refresh-token reuse: a previously-consumed grant was presented again. Treat as replay
+            // and revoke the entire originating family (RFC 6749 §10.4 / RFC 6819 §5.2.2.3) so a
+            // stolen token cannot outlive its detection.
+            var revokedCount = await grantRepository.RevokeFamilyAsync(grant.FamilyId, cancellationToken);
+            logger.LogWarning(
+                "Refresh token reuse detected: revoked {RevokedCount} grant(s) in family {FamilyId} (offending handle {GrantHandle}) at {Timestamp:o}.",
+                revokedCount, grant.FamilyId, grant.Id, DateTime.UtcNow);
             return Result<TokenResponse>.Failure(ProtocolError.InvalidGrant("Refresh token has been revoked."));
         }
 
@@ -74,7 +83,8 @@ public sealed class RefreshTokenHandler(
             clientId: client.ClientId,
             subjectId: grant.SubjectId,
             data: JsonSerializer.Serialize(new { scope }),
-            expiration: DateTime.UtcNow.AddSeconds(client.RefreshTokenLifetimeSeconds));
+            expiration: DateTime.UtcNow.AddSeconds(client.RefreshTokenLifetimeSeconds),
+            familyId: grant.FamilyId);
         await grantRepository.AddAsync(newRefreshGrant, cancellationToken);
 
         // Build tokens

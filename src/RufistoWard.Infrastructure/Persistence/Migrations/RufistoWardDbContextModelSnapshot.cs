@@ -345,6 +345,9 @@ namespace RufistoWard.Tokens.Persistence.Migrations
                     b.Property<DateTime?>("Expiration")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<Guid>("FamilyId")
+                        .HasColumnType("uuid");
+
                     b.Property<string>("SubjectId")
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");
@@ -364,6 +367,9 @@ namespace RufistoWard.Tokens.Persistence.Migrations
 
                     b.HasIndex("SubjectId")
                         .HasDatabaseName("IX_PersistedGrants_SubjectId");
+
+                    b.HasIndex("FamilyId", "ConsumedAt")
+                        .HasDatabaseName("IX_PersistedGrants_FamilyId_ConsumedAt");
 
                     b.ToTable("PersistedGrants", (string)null);
                 });

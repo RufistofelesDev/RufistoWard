@@ -11,9 +11,16 @@ public sealed class PersistedGrant
     public string Data { get; private set; } = default!;
     public DateTime? ConsumedAt { get; private set; }
 
+    /// <summary>
+    /// Identifies the originating-grant family. The root grant of an auth-code or device-code
+    /// exchange stamps a new value; every refresh-rotation descendant inherits its parent's value
+    /// unchanged. Reuse of any grant in a family revokes the whole family (RFC 6819 §5.2.2.3).
+    /// </summary>
+    public Guid FamilyId { get; private set; }
+
     private PersistedGrant() { }
 
-    public static PersistedGrant Create(string id, string type, string clientId, string? subjectId, string data, DateTime? expiration = null)
+    public static PersistedGrant Create(string id, string type, string clientId, string? subjectId, string data, DateTime? expiration = null, Guid? familyId = null)
     {
         return new PersistedGrant
         {
@@ -24,6 +31,7 @@ public sealed class PersistedGrant
             Data = data,
             CreatedAt = DateTime.UtcNow,
             Expiration = expiration,
+            FamilyId = familyId ?? Guid.NewGuid(),
         };
     }
 
