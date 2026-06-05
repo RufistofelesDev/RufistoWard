@@ -178,8 +178,14 @@ public sealed class JwtDifferentialTests : IAsyncLifetime
         // Spot-check the OIDC-required claims that matter most for an access token.
         Assert.Equal(Issuer, result.Claims["iss"].ToString());
         Assert.Equal(TestClientId, result.Claims["sub"].ToString());
-        Assert.Equal(TestClientId, result.Claims["client_id"]?.ToString()
-            ?? result.Claims["sub"].ToString());  // some implementations emit client_id separately
+        // RufistoWard's access tokens do not (yet) emit a separate client_id claim;
+        // RFC 9068 §2.2 makes it REQUIRED — tracked separately as a conformance gap.
+        // Until then, tolerate its absence and fall back to sub (the client is the subject in M2M).
+        // NOTE: Dictionary's indexer throws on a missing key, so probe with TryGetValue.
+        var clientIdClaim = result.Claims.TryGetValue("client_id", out var clientIdValue)
+            ? clientIdValue?.ToString()
+            : result.Claims["sub"].ToString();
+        Assert.Equal(TestClientId, clientIdClaim);
     }
 
     private static Dictionary<string, string?> ParseServerClaims(string jwt)
@@ -206,8 +212,12 @@ public sealed class JwtDifferentialTests : IAsyncLifetime
         var padded = input.Replace('-', '+').Replace('_', '/');
         switch (padded.Length % 4)
         {
-            case 2: padded += "=="; break;
-            case 3: padded += "="; break;
+            case 2:
+                padded += "==";
+                break;
+            case 3:
+                padded += "=";
+                break;
         }
         return Convert.FromBase64String(padded);
     }
