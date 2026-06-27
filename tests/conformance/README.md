@@ -114,7 +114,8 @@ https://localhost.emobix.co.uk:8443`) since the default base targets the hosted 
 ## Verified OP facts (so the dev doesn't re-derive)
 
 - Endpoints: `/connect/authorize`, `/connect/token`, `/connect/userinfo`, `/.well-known/jwks`,
-  discovery `/.well-known/openid-configuration`. Login page route `/Login`.
+  discovery `/.well-known/openid-configuration`. Login page route `/login` (lowercase — the suite's
+  WebRunner URL match is case-sensitive; `/Login*` fails with "unexpected url for task: Login").
 - Login form selectors: `#username`, `#password`, submit `[data-testid="login-button"]`. No consent screen.
 - Issuer config key: `Token:Issuer`. Schema built on boot via `Database:AutoMigrateOnStartup=true`.
 - Admin user seeded by the `seed-admin` CLI command; the conformance client + login test user are

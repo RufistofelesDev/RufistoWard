@@ -28,7 +28,7 @@
       "tasks": [
         {
           "task": "Login",
-          "match": "https://YOUR-TUNNEL-HOST/Login*",
+          "match": "https://YOUR-TUNNEL-HOST/login*",
           "commands": [
             ["text", "id", "username", "testuser@conformance.local"],
             ["text", "id", "password", "Conformance!1"],

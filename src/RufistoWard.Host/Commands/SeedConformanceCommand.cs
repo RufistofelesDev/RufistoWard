@@ -86,14 +86,17 @@ public static class SeedConformanceCommand
     }
 
     /// <summary>
-    /// Builds the static confidential conformance client: PKCE-enforced authorization-code +
-    /// refresh-token grants, the standard OIDC scopes, both suite callbacks (derived from
+    /// Builds the static confidential conformance client: authorization-code + refresh-token
+    /// grants, the standard OIDC scopes, both suite callbacks (derived from
     /// <paramref name="redirectBase"/>), and a known secret hashed the same way
-    /// <c>ClientAuthenticator</c> verifies it.
+    /// <c>ClientAuthenticator</c> verifies it. PKCE is NOT required: the OIDF Basic OP profile
+    /// never sends code_challenge, so the suite's authorization requests would be rejected.
     /// </summary>
     public static Client BuildClient(string redirectBase)
     {
         var client = Client.Create(ConformanceClientId, "OIDF Conformance — Basic", requireClientSecret: true);
+        client.Update(clientName: null, enabled: null, requirePkce: false,
+            accessTokenLifetimeSeconds: null, refreshTokenLifetimeSeconds: null);
 
         foreach (var grantType in GrantTypes)
             client.AddGrantType(grantType);

@@ -41,11 +41,27 @@ public sealed class Client
 
     public void Update(string? clientName, bool? enabled, bool? requirePkce, int? accessTokenLifetimeSeconds, int? refreshTokenLifetimeSeconds)
     {
-        if (clientName is not null) ClientName = clientName;
-        if (enabled.HasValue) Enabled = enabled.Value;
-        if (requirePkce.HasValue) RequirePkce = requirePkce.Value;
-        if (accessTokenLifetimeSeconds.HasValue) AccessTokenLifetimeSeconds = accessTokenLifetimeSeconds.Value;
-        if (refreshTokenLifetimeSeconds.HasValue) RefreshTokenLifetimeSeconds = refreshTokenLifetimeSeconds.Value;
+        if (clientName is not null)
+            ClientName = clientName;
+        if (enabled.HasValue)
+            Enabled = enabled.Value;
+        if (requirePkce.HasValue)
+        {
+            // Public clients (no client secret) have no other defense against authorization-code
+            // interception, so PKCE is mandatory for them (OAuth 2.1 / Security BCP). Only
+            // confidential clients may opt out.
+            if (!requirePkce.Value && !RequireClientSecret)
+            {
+                throw new InvalidOperationException(
+                    "PKCE cannot be disabled for a public client; only confidential clients (with a client secret) may opt out of PKCE.");
+            }
+
+            RequirePkce = requirePkce.Value;
+        }
+        if (accessTokenLifetimeSeconds.HasValue)
+            AccessTokenLifetimeSeconds = accessTokenLifetimeSeconds.Value;
+        if (refreshTokenLifetimeSeconds.HasValue)
+            RefreshTokenLifetimeSeconds = refreshTokenLifetimeSeconds.Value;
         UpdatedAt = DateTime.UtcNow;
     }
 

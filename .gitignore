@@ -52,6 +52,9 @@ _bmad-output/test-artifacts/
 # Note: .github/ and _bmad-output/ (except test-artifacts/) are now tracked.
 # Planning artifacts, stories, sprint status, and CI workflows are project source of truth.
 
+# Local conformance run config (contains local Postgres credentials; docker template lives in tests/conformance/config)
+src/RufistoWard.Host/appsettings.Conformance.json
+
 # macOS
 .DS_Store
 

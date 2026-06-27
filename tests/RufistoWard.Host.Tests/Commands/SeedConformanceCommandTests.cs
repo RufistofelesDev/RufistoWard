@@ -73,7 +73,9 @@ public sealed class SeedConformanceCommandTests
 
         Assert.NotNull(client);
         Assert.True(client.Enabled);
-        Assert.True(client.RequirePkce);
+        // The OIDF Basic OP profile never sends code_challenge — the suite's requests would be
+        // rejected if the client required PKCE (enforcement is per-client, default true).
+        Assert.False(client.RequirePkce);
         Assert.True(client.RequireClientSecret);
 
         var grantTypes = client.GrantTypes.Select(g => g.GrantType).ToArray();
