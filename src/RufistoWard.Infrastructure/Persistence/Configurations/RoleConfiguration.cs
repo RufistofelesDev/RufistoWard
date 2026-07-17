@@ -12,7 +12,7 @@ public sealed class RoleConfiguration : IEntityTypeConfiguration<Role>
         builder.HasKey(r => r.Id);
 
         builder.Property(r => r.Name).HasMaxLength(200).IsRequired();
-        builder.HasIndex(r => r.Name).IsUnique().HasDatabaseName("UQ_Roles_Name");
+        builder.HasIndex(r => new { r.TenantId, r.Name }).IsUnique().HasDatabaseName("UQ_Roles_TenantId_Name");
 
         builder.Property(r => r.Description).HasMaxLength(1000);
 

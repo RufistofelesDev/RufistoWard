@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using RufistoWard.Identity.Entities;
 using RufistoWard.Tokens.Persistence;
 using RufistoWard.Tokens.Persistence.Repositories;
+using RufistoWard.Tokens.Tenancy;
 
 /// <summary>
 /// Direct persistence tests for <see cref="PersistedGrantRepository"/> against a real relational
@@ -28,11 +29,12 @@ public sealed class PersistedGrantRepositoryTests : IDisposable
             .UseSqlite(_connection)
             .Options;
 
-        using var context = new RufistoWardDbContext(_options);
+        using var context = NewContext();
         context.Database.EnsureCreated();
     }
 
-    private RufistoWardDbContext NewContext() => new(_options);
+    private RufistoWardDbContext NewContext() =>
+        new(_options, new ResolvedTenantContext(new SingleTenantResolver()));
 
     private static PersistedGrant NewGrant(
         string id,

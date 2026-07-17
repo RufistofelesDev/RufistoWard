@@ -1,8 +1,15 @@
 namespace RufistoWard.Identity.Entities;
 
-public sealed class DeviceCode
+using RufistoWard.Identity.Interfaces;
+
+public sealed class DeviceCode : ITenantScoped
 {
     public int Id { get; private set; }
+
+    /// <summary>
+    /// The tenant this row belongs to. Stamped on insert by the persistence layer.
+    /// </summary>
+    public int TenantId { get; private set; }
     public string DeviceCodeValue { get; private set; } = default!;
     public string UserCode { get; private set; } = default!;
     public string? SubjectId { get; private set; }

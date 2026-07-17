@@ -1,8 +1,15 @@
 namespace RufistoWard.Identity.Entities;
 
-public sealed class Client
+using RufistoWard.Identity.Interfaces;
+
+public sealed class Client : ITenantScoped
 {
     public int Id { get; private set; }
+
+    /// <summary>
+    /// The tenant this row belongs to. Stamped on insert by the persistence layer.
+    /// </summary>
+    public int TenantId { get; private set; }
     public string ClientId { get; private set; } = default!;
     public string ClientName { get; private set; } = default!;
     public string? Description { get; private set; }

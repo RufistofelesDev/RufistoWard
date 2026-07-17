@@ -12,7 +12,7 @@ public sealed class ClientConfiguration : IEntityTypeConfiguration<Client>
         builder.HasKey(c => c.Id);
 
         builder.Property(c => c.ClientId).HasMaxLength(200).IsRequired();
-        builder.HasIndex(c => c.ClientId).IsUnique().HasDatabaseName("UQ_Clients_ClientId");
+        builder.HasIndex(c => new { c.TenantId, c.ClientId }).IsUnique().HasDatabaseName("UQ_Clients_TenantId_ClientId");
 
         builder.Property(c => c.ClientName).HasMaxLength(200).IsRequired();
         builder.Property(c => c.Description).HasMaxLength(1000);

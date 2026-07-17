@@ -1,8 +1,15 @@
 namespace RufistoWard.Identity.Entities;
 
-public sealed class PersistedGrant
+using RufistoWard.Identity.Interfaces;
+
+public sealed class PersistedGrant : ITenantScoped
 {
     public string Id { get; private set; } = default!;
+
+    /// <summary>
+    /// The tenant this row belongs to. Stamped on insert by the persistence layer.
+    /// </summary>
+    public int TenantId { get; private set; }
     public string Type { get; private set; } = default!;
     public string? SubjectId { get; private set; }
     public string ClientId { get; private set; } = default!;

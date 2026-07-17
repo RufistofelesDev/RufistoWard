@@ -3,6 +3,7 @@ namespace RufistoWard.Tokens.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
 using Microsoft.Extensions.Configuration;
+using RufistoWard.Tokens.Tenancy;
 
 public sealed class DesignTimeDbContextFactory : IDesignTimeDbContextFactory<RufistoWardDbContext>
 {
@@ -29,6 +30,10 @@ public sealed class DesignTimeDbContextFactory : IDesignTimeDbContextFactory<Ruf
             optionsBuilder.UseNpgsql(connectionString);
         }
 
-        return new RufistoWardDbContext(optionsBuilder.Options);
+        // Migration scaffolding only reads the model, never a row, so the tenant here affects
+        // nothing that ends up in a migration. The single-tenant resolver keeps it honest anyway.
+        return new RufistoWardDbContext(
+            optionsBuilder.Options,
+            new ResolvedTenantContext(new SingleTenantResolver()));
     }
 }

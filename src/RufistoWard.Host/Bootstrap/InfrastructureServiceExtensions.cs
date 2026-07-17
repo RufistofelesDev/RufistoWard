@@ -1,10 +1,12 @@
 namespace RufistoWard.Core.Bootstrap;
 
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using RufistoWard.Core.Options;
 using RufistoWard.Identity.Interfaces;
 using RufistoWard.Tokens.Persistence;
 using RufistoWard.Tokens.Persistence.Repositories;
+using RufistoWard.Tokens.Tenancy;
 
 public static class InfrastructureServiceExtensions
 {
@@ -12,6 +14,12 @@ public static class InfrastructureServiceExtensions
         this IServiceCollection services,
         IConfiguration configuration)
     {
+        // Registered with TryAdd so that a deployment supplying its own resolver — the extension
+        // point for serving more than one tenant — wins over the single-tenant default rather
+        // than silently running alongside it.
+        services.TryAddScoped<ITenantResolver, SingleTenantResolver>();
+        services.TryAddScoped<ITenantContext, ResolvedTenantContext>();
+
         var databaseSection = configuration.GetSection("Database");
         var provider = databaseSection.GetValue<DatabaseProvider>("Provider");
         var connectionString = databaseSection["ConnectionString"]

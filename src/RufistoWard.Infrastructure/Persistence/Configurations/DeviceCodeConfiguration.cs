@@ -12,10 +12,10 @@ public sealed class DeviceCodeConfiguration : IEntityTypeConfiguration<DeviceCod
         builder.HasKey(d => d.Id);
 
         builder.Property(d => d.DeviceCodeValue).HasMaxLength(200).IsRequired();
-        builder.HasIndex(d => d.DeviceCodeValue).IsUnique().HasDatabaseName("UQ_DeviceCodes_DeviceCode");
+        builder.HasIndex(d => new { d.TenantId, d.DeviceCodeValue }).IsUnique().HasDatabaseName("UQ_DeviceCodes_TenantId_DeviceCode");
 
         builder.Property(d => d.UserCode).HasMaxLength(200).IsRequired();
-        builder.HasIndex(d => d.UserCode).IsUnique().HasDatabaseName("UQ_DeviceCodes_UserCode");
+        builder.HasIndex(d => new { d.TenantId, d.UserCode }).IsUnique().HasDatabaseName("UQ_DeviceCodes_TenantId_UserCode");
 
         builder.Property(d => d.SubjectId).HasMaxLength(200);
         builder.Property(d => d.ClientId).HasMaxLength(200).IsRequired();

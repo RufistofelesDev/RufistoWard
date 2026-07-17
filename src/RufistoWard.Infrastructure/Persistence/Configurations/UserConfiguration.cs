@@ -12,13 +12,13 @@ public sealed class UserConfiguration : IEntityTypeConfiguration<User>
         builder.HasKey(u => u.Id);
 
         builder.Property(u => u.SubjectId).HasMaxLength(200).IsRequired();
-        builder.HasIndex(u => u.SubjectId).IsUnique().HasDatabaseName("UQ_Users_SubjectId");
+        builder.HasIndex(u => new { u.TenantId, u.SubjectId }).IsUnique().HasDatabaseName("UQ_Users_TenantId_SubjectId");
 
         builder.Property(u => u.Username).HasMaxLength(200).IsRequired();
-        builder.HasIndex(u => u.Username).IsUnique().HasDatabaseName("UQ_Users_Username");
+        builder.HasIndex(u => new { u.TenantId, u.Username }).IsUnique().HasDatabaseName("UQ_Users_TenantId_Username");
 
         builder.Property(u => u.Email).HasMaxLength(256).IsRequired();
-        builder.HasIndex(u => u.Email).IsUnique().HasDatabaseName("IX_Users_Email");
+        builder.HasIndex(u => new { u.TenantId, u.Email }).IsUnique().HasDatabaseName("IX_Users_TenantId_Email");
 
         builder.Property(u => u.PasswordHash).HasMaxLength(500).IsRequired();
 

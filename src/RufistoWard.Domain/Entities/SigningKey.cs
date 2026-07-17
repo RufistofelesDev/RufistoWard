@@ -1,8 +1,15 @@
 namespace RufistoWard.Identity.Entities;
 
-public sealed class SigningKey
+using RufistoWard.Identity.Interfaces;
+
+public sealed class SigningKey : ITenantScoped
 {
     public int Id { get; private set; }
+
+    /// <summary>
+    /// The tenant this row belongs to. Stamped on insert by the persistence layer.
+    /// </summary>
+    public int TenantId { get; private set; }
     public string KeyId { get; private set; } = default!;
     public string Algorithm { get; private set; } = default!;
     public string KeyType { get; private set; } = default!;

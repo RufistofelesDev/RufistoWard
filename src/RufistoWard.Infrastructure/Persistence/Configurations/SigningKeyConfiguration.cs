@@ -12,7 +12,7 @@ public sealed class SigningKeyConfiguration : IEntityTypeConfiguration<SigningKe
         builder.HasKey(k => k.Id);
 
         builder.Property(k => k.KeyId).HasMaxLength(200).IsRequired();
-        builder.HasIndex(k => k.KeyId).IsUnique().HasDatabaseName("UQ_SigningKeys_KeyId");
+        builder.HasIndex(k => new { k.TenantId, k.KeyId }).IsUnique().HasDatabaseName("UQ_SigningKeys_TenantId_KeyId");
 
         builder.Property(k => k.Algorithm).HasMaxLength(50).IsRequired();
         builder.Property(k => k.KeyType).HasMaxLength(50).IsRequired();

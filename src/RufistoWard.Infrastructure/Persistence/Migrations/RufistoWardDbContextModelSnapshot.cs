@@ -46,11 +46,14 @@ namespace RufistoWard.Tokens.Persistence.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");
 
+                    b.Property<int>("TenantId")
+                        .HasColumnType("integer");
+
                     b.HasKey("Id");
 
-                    b.HasIndex("Name")
+                    b.HasIndex("TenantId", "Name")
                         .IsUnique()
-                        .HasDatabaseName("UQ_ApiResources_Name");
+                        .HasDatabaseName("UQ_ApiResources_TenantId_Name");
 
                     b.ToTable("ApiResources", (string)null);
                 });
@@ -108,11 +111,14 @@ namespace RufistoWard.Tokens.Persistence.Migrations
                     b.Property<bool>("Required")
                         .HasColumnType("boolean");
 
+                    b.Property<int>("TenantId")
+                        .HasColumnType("integer");
+
                     b.HasKey("Id");
 
-                    b.HasIndex("Name")
+                    b.HasIndex("TenantId", "Name")
                         .IsUnique()
-                        .HasDatabaseName("UQ_ApiScopes_Name");
+                        .HasDatabaseName("UQ_ApiScopes_TenantId_Name");
 
                     b.ToTable("ApiScopes", (string)null);
                 });
@@ -157,14 +163,17 @@ namespace RufistoWard.Tokens.Persistence.Migrations
                     b.Property<bool>("RequirePkce")
                         .HasColumnType("boolean");
 
+                    b.Property<int>("TenantId")
+                        .HasColumnType("integer");
+
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("ClientId")
+                    b.HasIndex("TenantId", "ClientId")
                         .IsUnique()
-                        .HasDatabaseName("UQ_Clients_ClientId");
+                        .HasDatabaseName("UQ_Clients_TenantId_ClientId");
 
                     b.ToTable("Clients", (string)null);
                 });
@@ -303,6 +312,9 @@ namespace RufistoWard.Tokens.Persistence.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");
 
+                    b.Property<int>("TenantId")
+                        .HasColumnType("integer");
+
                     b.Property<string>("UserCode")
                         .IsRequired()
                         .HasMaxLength(200)
@@ -310,13 +322,13 @@ namespace RufistoWard.Tokens.Persistence.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("DeviceCodeValue")
+                    b.HasIndex("TenantId", "DeviceCodeValue")
                         .IsUnique()
-                        .HasDatabaseName("UQ_DeviceCodes_DeviceCode");
+                        .HasDatabaseName("UQ_DeviceCodes_TenantId_DeviceCode");
 
-                    b.HasIndex("UserCode")
+                    b.HasIndex("TenantId", "UserCode")
                         .IsUnique()
-                        .HasDatabaseName("UQ_DeviceCodes_UserCode");
+                        .HasDatabaseName("UQ_DeviceCodes_TenantId_UserCode");
 
                     b.ToTable("DeviceCodes", (string)null);
                 });
@@ -351,6 +363,9 @@ namespace RufistoWard.Tokens.Persistence.Migrations
                     b.Property<string>("SubjectId")
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");
+
+                    b.Property<int>("TenantId")
+                        .HasColumnType("integer");
 
                     b.Property<string>("Type")
                         .IsRequired()
@@ -391,11 +406,14 @@ namespace RufistoWard.Tokens.Persistence.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");
 
+                    b.Property<int>("TenantId")
+                        .HasColumnType("integer");
+
                     b.HasKey("Id");
 
-                    b.HasIndex("Name")
+                    b.HasIndex("TenantId", "Name")
                         .IsUnique()
-                        .HasDatabaseName("UQ_Roles_Name");
+                        .HasDatabaseName("UQ_Roles_TenantId_Name");
 
                     b.ToTable("Roles", (string)null);
                 });
@@ -459,11 +477,14 @@ namespace RufistoWard.Tokens.Persistence.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<int>("TenantId")
+                        .HasColumnType("integer");
+
                     b.HasKey("Id");
 
-                    b.HasIndex("KeyId")
+                    b.HasIndex("TenantId", "KeyId")
                         .IsUnique()
-                        .HasDatabaseName("UQ_SigningKeys_KeyId");
+                        .HasDatabaseName("UQ_SigningKeys_TenantId_KeyId");
 
                     b.ToTable("SigningKeys", (string)null);
                 });
@@ -506,6 +527,9 @@ namespace RufistoWard.Tokens.Persistence.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");
 
+                    b.Property<int>("TenantId")
+                        .HasColumnType("integer");
+
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -516,17 +540,17 @@ namespace RufistoWard.Tokens.Persistence.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("Email")
+                    b.HasIndex("TenantId", "Email")
                         .IsUnique()
-                        .HasDatabaseName("IX_Users_Email");
+                        .HasDatabaseName("IX_Users_TenantId_Email");
 
-                    b.HasIndex("SubjectId")
+                    b.HasIndex("TenantId", "SubjectId")
                         .IsUnique()
-                        .HasDatabaseName("UQ_Users_SubjectId");
+                        .HasDatabaseName("UQ_Users_TenantId_SubjectId");
 
-                    b.HasIndex("Username")
+                    b.HasIndex("TenantId", "Username")
                         .IsUnique()
-                        .HasDatabaseName("UQ_Users_Username");
+                        .HasDatabaseName("UQ_Users_TenantId_Username");
 
                     b.ToTable("Users", (string)null);
                 });

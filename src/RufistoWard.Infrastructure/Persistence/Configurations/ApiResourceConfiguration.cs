@@ -12,7 +12,7 @@ public sealed class ApiResourceConfiguration : IEntityTypeConfiguration<ApiResou
         builder.HasKey(r => r.Id);
 
         builder.Property(r => r.Name).HasMaxLength(200).IsRequired();
-        builder.HasIndex(r => r.Name).IsUnique().HasDatabaseName("UQ_ApiResources_Name");
+        builder.HasIndex(r => new { r.TenantId, r.Name }).IsUnique().HasDatabaseName("UQ_ApiResources_TenantId_Name");
 
         builder.Property(r => r.DisplayName).HasMaxLength(200);
         builder.Property(r => r.Description).HasMaxLength(1000);
