@@ -239,13 +239,30 @@ Entity configurations are provider-agnostic — only the generated migration SQL
 
 | Feature | RufistoWard | Duende IS | Keycloak | TheIdServer |
 |---------|-------------|-----------|----------|-------------|
-| License | Open source (free forever) | Commercial ($) | Open source | Open source |
+| License | AGPL-3.0 + commercial | Commercial ($) | Apache 2.0 | Apache 2.0 |
+| Every OAuth/OIDC flow free | Yes, permanently | No | Yes | Yes |
 | .NET native | Yes | Yes | No (Java) | Yes |
 | Built-in Admin UI | Yes | No | Yes | Yes |
 | IS4 migration tooling | Yes | Upgrade path | No | No |
 | CSP compliant | Yes (strict) | Partial | Partial | Partial |
 | No JS framework required | Yes (HTMX) | N/A | React | Blazor |
 
+Read that first row honestly: **RufistoWard is the most restrictive open-source licence in
+its own comparison table.** Keycloak and TheIdServer are Apache 2.0; this is AGPL. If your
+organisation rejects AGPL by policy, that is a real cost and it is on us, not on you — see
+[LICENSING.md](LICENSING.md), because there is a commercial licence for exactly that case.
+
 ## License
 
-Open source. Core identity server, protocols, Admin UI, and migration tools are free. See [LICENSE](LICENSE) for details.
+Dual-licensed: **[AGPL-3.0](LICENSE)** for everyone, plus a commercial licence for
+organisations that cannot accept the AGPL or that use the commercial tier
+(multi-tenancy, tamper-evident audit). See **[LICENSING.md](LICENSING.md)**.
+
+Every OAuth 2.0 and OpenID Connect flow, the Admin UI, the IS4 migration tooling, and
+security event logging are free under the AGPL and will never move behind a paywall.
+IdentityServer4 was free until it wasn't, and a lot of people found out the hard way.
+**RufistoWard does not charge for protocol. It charges for operational convenience.**
+
+If you self-host RufistoWard to authenticate your own users, the AGPL asks nothing of
+you. Section 13 only reaches you if you offer a *modified* version to others over a
+network. The AGPL is a fence around competitors, not around users.

@@ -93,7 +93,39 @@ coverage). These are non-negotiable for an identity server.
 6. Be responsive to review feedback. Security- and protocol-surface changes get extra
    scrutiny — that's expected, not personal.
 
-## License
+## Licensing your contribution
 
-By contributing, you agree that your contributions are licensed under the project's
-[Apache License 2.0](LICENSE).
+RufistoWard is dual-licensed: [AGPL-3.0](LICENSE) for everyone, and a commercial licence
+for organisations that cannot accept the AGPL or that use the commercial tier. See
+[LICENSING.md](LICENSING.md).
+
+That is why contributions need a Contributor Licence Agreement, and why it has to be in
+place **before** your first pull request is merged rather than sorted out later.
+
+**You keep your copyright.** You are not signing your work over to anyone. What you grant
+is a licence *to the maintainer* to distribute your contribution under **both** the AGPL
+and the commercial licence.
+
+Without that grant, contributed code could only ever ship in the AGPL build. One merged
+pull request would split the project in two — an open version containing your work and a
+commercial one that legally could not — and the only remedy would be tracking down every
+past contributor for a signature on code already released. That is a mess nobody can fix
+retroactively, so it is prevented up front.
+
+By opening a pull request you confirm that:
+
+1. You wrote the contribution, or have the right to submit it under these terms.
+2. If your employer has rights to work you produce, you have their permission to submit
+   it.
+3. You grant the maintainer a perpetual, worldwide, irrevocable licence to reproduce,
+   modify, and distribute your contribution under the AGPL-3.0 **and** under commercial
+   terms.
+4. You understand your contribution may ship in a paid build, and you are not owed
+   payment for it.
+
+If point 3 or 4 is not something you want, that is completely legitimate — say so in the
+issue before you write code. Some contributions can be reshaped so the question does not
+arise, and it is far better to find that out before you have spent a weekend on it than
+after.
+
+This is the same arrangement used by Grafana, Mattermost, Bitwarden, and Nextcloud.
