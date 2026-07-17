@@ -22,13 +22,9 @@ This table will be replaced with a per-minor-version support window once `1.0` s
 **Please do not open a public issue, pull request, or discussion for security problems.**
 Public disclosure before a fix is available puts every deployment at risk.
 
-Report privately through one of these channels:
-
-1. **GitHub Private Vulnerability Reporting** (preferred) — open the repository's
-   **Security → Report a vulnerability** tab. This creates a private advisory only the
-   maintainers can see.
-2. **Email** — `security@rufistoward.dev` *(maintainer: confirm or replace this address
-   before the public 1.0 launch)*. Encrypt with the maintainer's public key if you have it.
+Report privately through **GitHub Private Vulnerability Reporting** — open the
+repository's **Security → Report a vulnerability** tab. This creates a private advisory
+that only the maintainers can see, and it is the only reporting channel we monitor.
 
 When you report, please include as much of the following as you can:
 
