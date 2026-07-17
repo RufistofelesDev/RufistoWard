@@ -40,7 +40,8 @@ RufistoWard supports two database providers. Set the provider in `src/RufistoWar
 ### 1. Build the solution
 
 ```bash
-cd D:\Code\Rufistofeles.Dev\RufistofelesIdentityServer
+git clone https://github.com/Rufistofeles/RufistoWard.git
+cd RufistoWard
 dotnet build RufistoWard.slnx
 ```
 
