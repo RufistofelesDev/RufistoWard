@@ -12,6 +12,7 @@ public sealed class AuthorizationCodeGenerator(IPersistedGrantRepository grantRe
     public async Task<string> GenerateAsync(
         string subjectId,
         ValidatedAuthorizeRequest request,
+        DateTimeOffset? authTime = null,
         CancellationToken cancellationToken = default)
     {
         var codeId = Base64Url.Encode(RandomNumberGenerator.GetBytes(32));
@@ -25,6 +26,7 @@ public sealed class AuthorizationCodeGenerator(IPersistedGrantRepository grantRe
             CodeChallenge = request.CodeChallenge,
             CodeChallengeMethod = request.CodeChallengeMethod,
             Nonce = request.Nonce,
+            AuthTime = authTime?.ToUnixTimeSeconds(),
         };
 
         var grant = PersistedGrant.Create(

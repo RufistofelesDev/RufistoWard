@@ -65,11 +65,10 @@ public sealed class RefreshTokenHandler(
             return Result<TokenResponse>.Failure(ProtocolError.InvalidGrant("Client mismatch."));
         }
 
-        // Parse stored scope
-        var grantData = JsonSerializer.Deserialize<JsonElement>(grant.Data);
-        var scope = grantData.TryGetProperty("scope", out var scopeProp)
-            ? scopeProp.GetString() ?? ""
-            : "";
+        // Parse stored scope + the original authentication time
+        var grantData = JsonSerializer.Deserialize<RefreshTokenData>(grant.Data);
+        var scope = grantData?.Scope ?? "";
+        var authTime = grantData?.AuthTime;
         var scopes = scope.Split(' ', StringSplitOptions.RemoveEmptyEntries);
 
         // Rotate: consume old token and create new one
@@ -82,7 +81,7 @@ public sealed class RefreshTokenHandler(
             type: "refresh_token",
             clientId: client.ClientId,
             subjectId: grant.SubjectId,
-            data: JsonSerializer.Serialize(new { scope }),
+            data: JsonSerializer.Serialize(new RefreshTokenData { Scope = scope, AuthTime = authTime }),
             expiration: DateTime.UtcNow.AddSeconds(client.RefreshTokenLifetimeSeconds),
             familyId: grant.FamilyId);
         await grantRepository.AddAsync(newRefreshGrant, cancellationToken);
@@ -96,7 +95,11 @@ public sealed class RefreshTokenHandler(
             Issuer = issuer,
             LifetimeSeconds = client.AccessTokenLifetimeSeconds,
             Scopes = scopes,
-            AuthTime = new DateTimeOffset(grant.CreatedAt, TimeSpan.Zero),
+            // The ORIGINAL authentication time, not this grant's creation time — a refresh does not
+            // re-authenticate the End-User, so auth_time must not move (OIDCC-12.2).
+            AuthTime = authTime is { } t
+                ? DateTimeOffset.FromUnixTimeSeconds(t)
+                : new DateTimeOffset(grant.CreatedAt, TimeSpan.Zero),
         };
 
         var accessToken = await tokenBuilder.BuildAccessTokenAsync(tokenContext, cancellationToken);

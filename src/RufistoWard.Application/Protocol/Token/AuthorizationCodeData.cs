@@ -24,4 +24,12 @@ public sealed record AuthorizationCodeData
 
     [JsonPropertyName("nonce")]
     public string? Nonce { get; init; }
+
+    /// <summary>
+    /// When the End-User actually authenticated, as Unix seconds — carried from the login session,
+    /// NOT from the code's creation time. Two authorization requests over one session must yield the
+    /// same <c>auth_time</c> in their id_tokens (OIDCC-2).
+    /// </summary>
+    [JsonPropertyName("auth_time")]
+    public long? AuthTime { get; init; }
 }

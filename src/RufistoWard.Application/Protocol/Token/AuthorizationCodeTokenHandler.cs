@@ -109,7 +109,11 @@ public sealed class AuthorizationCodeTokenHandler(
             LifetimeSeconds = client.AccessTokenLifetimeSeconds,
             Scopes = scopes,
             Nonce = codeData.Nonce,
-            AuthTime = new DateTimeOffset(grant.CreatedAt, TimeSpan.Zero),
+            // The End-User's authentication time, carried from the login session. Falling back to the
+            // code's creation time would hand every authorization a fresh auth_time (OIDCC-2 breach).
+            AuthTime = codeData.AuthTime is { } t
+                ? DateTimeOffset.FromUnixTimeSeconds(t)
+                : new DateTimeOffset(grant.CreatedAt, TimeSpan.Zero),
         };
 
         var accessToken = await tokenBuilder.BuildAccessTokenAsync(tokenContext, cancellationToken);
@@ -127,7 +131,12 @@ public sealed class AuthorizationCodeTokenHandler(
             type: "refresh_token",
             clientId: client.ClientId,
             subjectId: codeData.SubjectId,
-            data: JsonSerializer.Serialize(new { scope = codeData.Scope }),
+            data: JsonSerializer.Serialize(new RefreshTokenData
+            {
+                Scope = codeData.Scope,
+                // Carried so a refreshed id_token reports the same auth_time (OIDCC-12.2).
+                AuthTime = codeData.AuthTime,
+            }),
             expiration: DateTime.UtcNow.AddSeconds(client.RefreshTokenLifetimeSeconds));
         await grantRepository.AddAsync(refreshGrant, cancellationToken);
 

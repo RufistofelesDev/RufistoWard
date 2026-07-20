@@ -15,6 +15,11 @@ public static class TokenEndpoints
     {
         endpoints.MapPost("/connect/token", async (HttpContext httpContext, CancellationToken cancellationToken) =>
         {
+            // RFC 6749 §5.1/§5.2: token endpoint responses carry credentials and MUST NOT be cached.
+            // Set before any response is written so it applies to successes and errors alike.
+            httpContext.Response.Headers.CacheControl = "no-store";
+            httpContext.Response.Headers.Pragma = "no-cache";
+
             var form = await httpContext.Request.ReadFormAsync(cancellationToken);
 
             var request = new TokenRequest

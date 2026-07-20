@@ -1,5 +1,6 @@
 namespace RufistoWard.Core.Pages;
 
+using System.Globalization;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Mvc;
@@ -35,6 +36,9 @@ public sealed class LoginModel(LoginHandler loginHandler) : PageModel
             new("sub", loginResult.SubjectId),
             new(ClaimTypes.Name, loginResult.Username),
             new(ClaimTypes.Email, loginResult.Email),
+            // Stamped once per interactive authentication. Every authorization served from this
+            // session reports this same auth_time, and max_age / prompt=login are measured from it.
+            new("auth_time", DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString(CultureInfo.InvariantCulture)),
         };
 
         var identity = new ClaimsIdentity(claims, "IdentityServerCookie");

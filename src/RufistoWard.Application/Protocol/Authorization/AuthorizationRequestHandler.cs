@@ -13,6 +13,8 @@ public sealed record AuthorizeRequest
     public string? CodeChallenge { get; init; }
     public string? CodeChallengeMethod { get; init; }
     public string? Nonce { get; init; }
+    public string? Request { get; init; }
+    public string? RequestUri { get; init; }
 }
 
 public sealed record ValidatedAuthorizeRequest
@@ -66,6 +68,22 @@ public sealed class AuthorizationRequestHandler(IClientRepository clientReposito
             // Never redirect to unregistered URIs — return error directly
             return Result<ValidatedAuthorizeRequest>.Failure(
                 new ProtocolError("invalid_redirect_uri", "The redirect_uri is not registered for this client."));
+        }
+
+        // Request objects (OIDCC-6.1/6.2). Discovery advertises neither `request_parameter_supported`
+        // nor `request_uri_parameter_supported`, so these MUST be rejected rather than ignored —
+        // silently dropping them loses the state/nonce carried inside the object.
+        // Checked after redirect_uri validation so the error can be returned to a registered URI.
+        if (!string.IsNullOrWhiteSpace(request.RequestUri))
+        {
+            return Result<ValidatedAuthorizeRequest>.Failure(
+                new ProtocolError("request_uri_not_supported", "The request_uri parameter is not supported."));
+        }
+
+        if (!string.IsNullOrWhiteSpace(request.Request))
+        {
+            return Result<ValidatedAuthorizeRequest>.Failure(
+                new ProtocolError("request_not_supported", "The request parameter is not supported."));
         }
 
         // PKCE (FR12): enforced per client policy (RequirePkce, default true). The OIDF Basic OP
