@@ -4,6 +4,9 @@
 
 *"No token, no passage."*
 
+[![OIDF conformance: Basic OP](https://img.shields.io/badge/OIDF%20conformance-Basic%20OP%20passing-brightgreen)](https://www.certification.openid.net/plan-detail.html?plan=ZyytN9FAD5ZeJ&public=true)
+[![OIDF conformance: Config OP](https://img.shields.io/badge/OIDF%20conformance-Config%20OP%20passing-brightgreen)](https://www.certification.openid.net/plan-detail.html?plan=Rc7CUe5MQqD0P&public=true)
+
 RufistoWard is a standalone OAuth2 and OpenID Connect identity server built on .NET 10. It delivers full protocol compliance through a configuration-driven deployment model — no custom code required. A built-in Administration UI gives admins self-service control over clients, resources, and users. Migration tooling provides a direct path from existing IdentityServer4 instances.
 
 ## Features
@@ -209,14 +212,37 @@ src/
 ## Testing
 
 ```bash
-# Run all 187 tests (xUnit v3 + Microsoft Testing Platform — `dotnet test` does NOT run these)
-dotnet run --project tests/RufistoWard.Domain.Tests         # 57 tests
-dotnet run --project tests/RufistoWard.Application.Tests     # 16 tests
-dotnet run --project tests/RufistoWard.Infrastructure.Tests  # 24 tests
-dotnet run --project tests/RufistoWard.Host.Tests            # 90 tests
+# Run all 218 tests (xUnit v3 + Microsoft Testing Platform — `dotnet test` does NOT run these)
+dotnet run --project tests/RufistoWard.Domain.Tests           # 60 tests
+dotnet run --project tests/RufistoWard.Application.Tests      # 22 tests
+dotnet run --project tests/RufistoWard.Infrastructure.Tests   # 40 tests
+dotnet run --project tests/RufistoWard.Host.Tests             # 96 tests
 ```
 
 Tests use an in-memory database and do not require PostgreSQL or SQL Server to be running.
+
+## Conformance
+
+RufistoWard passes the OpenID Foundation conformance suite for the **Basic OP** and **Config OP**
+profiles — 0 failures across all 35 basic-profile modules and all 36 config-profile checks.
+
+| Profile | Result | Log |
+|---------|--------|-----|
+| Basic OP | 22 passed · 5 warning · 4 skipped · 4 review · **0 failed** | [public results](https://www.certification.openid.net/plan-detail.html?plan=ZyytN9FAD5ZeJ&public=true) |
+| Config OP | 36 checks · **0 failed** | [public results](https://www.certification.openid.net/plan-detail.html?plan=Rc7CUe5MQqD0P&public=true) |
+
+> **Not a certification claim.** These are conformance-suite *test results*, not OpenID Certification.
+> As the OpenID Foundation states, such results "are not proof that a deployment is conformant nor that
+> it meets the requirements for certification." RufistoWard is **not** listed at
+> [openid.net/certification](https://openid.net/certification/); formal certification is a separate
+> submission process.
+
+Reproduce it with the runbook in [`tests/conformance/README.md`](tests/conformance/README.md).
+
+**Deferred to v1.1** (verified reasons, not defects):
+
+- `oidcc-formpost-*` — RufistoWard does not implement `response_mode=form_post`.
+- `oidcc-dynamic-*` — RufistoWard has no Dynamic Client Registration endpoint.
 
 ## Switching Database Providers
 

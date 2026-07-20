@@ -3,12 +3,18 @@
 Runs RufistoWard against the [OpenID Foundation conformance suite](https://gitlab.com/openid/conformance-suite)
 for the **Basic** and **Config** OP certification profiles (Story 10.5).
 
-> **Status (2026-06-05): TUNNEL-FIRST.** The primary path runs RufistoWard locally, exposes it via a
-> public HTTPS tunnel, and drives the **hosted** OIDF suite (`certification.openid.net`) against it — no
-> Docker. The `seed-conformance` CLI command seeds the static client + login test user deterministically
-> (done, unit-tested; default redirect base = the hosted suite). Remaining: run both plans green + capture
-> the bundle + add the badge. The **self-hosted docker-compose** path (and unattended nightly CI) is
-> **deferred to Story 10.5a** — its scaffold stays in this folder but is not the current path.
+> **Status (2026-07-19): BOTH PLANS GREEN AND PUBLISHED.** See [Results](#results). The path runs
+> RufistoWard locally, exposes it via a public HTTPS tunnel, and drives the **hosted** OIDF suite
+> (`www.certification.openid.net`) against it — no Docker. The **self-hosted docker-compose** path (and
+> unattended nightly CI) is **deferred to Story 10.5a** — its scaffold stays in this folder but is not the
+> current path.
+>
+> **Read this before assuming the harness alone got it green.** Story 10.5 was scoped as "external
+> conformance harness + docs, no production protocol code." That turned out to be wrong: the basic plan
+> surfaced **eight MUST-level protocol gaps** that had to be implemented before it could pass. They are
+> listed in [Protocol gaps this run exposed](#protocol-gaps-this-run-exposed). Six of the eight were
+> invisible until an earlier fix or a missing fixture unblocked them — **incomplete plan config masks real
+> gaps instead of failing loudly**, which is the single most important lesson for 10.5a's nightly run.
 
 ## Topology (why it's shaped this way)
 
@@ -71,17 +77,70 @@ Then in the hosted suite UI (`https://www.certification.openid.net`):
    discovery URL to `https://rufistoward.<yourdomain>/.well-known/openid-configuration`. Run it first — it
    validates discovery + JWKS only (no browser) and proves the topology.
 2. Create **`oidcc-basic-certification-test-plan`** (variants `server_metadata=discovery`,
-   `client_registration=static_client`). Client = `conformance-basic` / `conformance-basic-secret`. Use
-   `config/test-plans/rufistoward-basic.json` as the template (substitute `YOUR-TUNNEL-HOST`). **Verify the
-   login flow interactively before relying on the `browser` automation.**
-3. Capture the shareable result URL + download the JSON/HTML bundle to
-   `_bmad-output/test-artifacts/conformance/{YYYY-MM-DD}/`.
+   `client_registration=static_client`). Use `config/test-plans/rufistoward-basic.json` as the template
+   (substitute `YOUR-TUNNEL-HOST`).
+
+   > ⚠️ **Fill in ALL THREE client blocks before creating the plan.** Plan config is **immutable** — a
+   > missing block cannot be added later, and the only remedy is a brand-new plan and a full 35-module
+   > re-run. Worse, the affected modules fail with a *config* error that looks like an OP defect:
+   >
+   > | Form block | Value | Needed by |
+   > |---|---|---|
+   > | **Client** | `conformance-basic` / `conformance-basic-secret` | everything |
+   > | **Client for client_secret_post** | `conformance-basic` / `conformance-basic-secret` (reuse is fine — RufistoWard accepts both auth methods) | `oidcc-server-client-secret-post` |
+   > | **Second client** | `conformance-basic-2` / `conformance-basic-2-secret` (must be a genuinely different client) | `oidcc-refresh-token` |
+
+3. Run the ~35 modules. Most are a single browser redirect; see [Driving the run](#driving-the-run) for
+   the four that are not.
+4. Capture the shareable result URL + the bundle into
+   `_bmad-output/test-artifacts/conformance/{YYYY-MM-DD}/`. "Publish for certification" downloads the
+   full submission zip — but see the warning under [Results](#results) first.
 
 <a id="tunnel-caveats"></a>
 **Tunnel caveats:** prefer cloudflared or ngrok-reserved — **ngrok-free** injects a browser interstitial +
 requires an `ngrok-skip-browser-warning` header that breaks both the suite's browser and its server calls.
 A stable hostname keeps the seeded redirect URIs valid across runs. This exposes a dev instance publicly:
 seed only the conformance fixtures, use a throwaway Postgres, tear the tunnel down afterward.
+
+<a id="driving-the-run"></a>
+## Driving the run
+
+Most modules are a plain browser redirect: open the "Browser Interaction" URL, and if the OP asks for
+credentials sign in as `testuser@conformance.local` / `Conformance!1`. Four need special handling.
+
+| Module | What it needs |
+|---|---|
+| `oidcc-prompt-none-not-logged-in` | Clear the OP session **first** — visit `/connect/endsession`. The suite explicitly says "remove any cookies you may have received". With a live session the test's premise is void. |
+| `oidcc-prompt-login`, `oidcc-max-age-1`, `oidcc-ensure-registered-redirect-uri`, `oidcc-ensure-request-object-with-redirect-uri` | Each needs an **uploaded screenshot** (second login page / redirect-URI error page). Upload at `upload.html?log=<testId>`; the "Upload Images" button opens that page in a **new tab**. These land on verdict **REVIEW with 0 FAILURE**, which is the correct terminal state — an OIDF human reviews the image. |
+| `oidcc-ensure-post-request-succeeds` | **The suite allows only 30 seconds** for this interaction. A hand-driven login blows the budget; the late callback then throws `Illegal test state change: FINISHED -> RUNNING` and the module fails for a reason that has nothing to do with the OP. **Reliable trick:** sign in to the OP first, then submit a form to `/connect/authorize` **from a page already on the OP's own origin** (e.g. `/admin`). The `SameSite=Lax` session cookie then rides along, the OP redirects straight to the callback, and no login is needed. (A cross-site POST from the suite deliberately does *not* send that cookie, which is why the login appears at all.) |
+
+> **Never fabricate the screenshots.** They are certification evidence. If the OP does not actually show
+> a second login page, the correct action is to leave the module unsatisfied and fix the OP — which is
+> exactly how the `prompt=login` and `max_age` gaps below were found.
+
+**A failed module can be re-run on its own** with **Repeat Test** — the plan picks up the new result, so
+one fix does not cost a 35-module re-run. (Creating a *new plan* does, because plan config is immutable.)
+
+<a id="protocol-gaps-this-run-exposed"></a>
+## Protocol gaps this run exposed
+
+All eight were MUST-level and all are fixed. Recorded because the story predicted "no production protocol
+code should need changes" — that prediction was wrong, and the next profile (formpost/dynamic, or FAPI)
+should budget for the same.
+
+| # | Gap | Spec | Fix |
+|---|---|---|---|
+| 1 | `auth_time` taken from the authorization **code's** creation time, so every id_token got a fresh value | OIDCC-2 | Stamp `auth_time` at login; carry via `AuthorizationCodeData.AuthTime` |
+| 2 | `prompt=login` did not re-authenticate | OIDCC-3.1.2.1 | Force re-auth; **strip `prompt=login` from the login return URL or it loops forever** |
+| 3 | `prompt=none` rendered the login page instead of erroring | OIDCC-3.1.2.6 | Return `login_required` |
+| 4 | `max_age` did not force re-authentication | OIDCC-3.1.2.1 | Compare `now - auth_time` against `max_age` |
+| 5 | `POST /connect/authorize` returned **405** | OIDCC-3.1.2.1 | Support GET *and* POST; a POST needing login resumes as a GET |
+| 6 | `request` / `request_uri` silently **ignored**, dropping the state/nonce inside them | OIDCC-6.1/6.2 | Return `request_not_supported` / `request_uri_not_supported` |
+| 7 | Token endpoint omitted `Cache-Control: no-store` | RFC 6749 §5.1 | Set `no-store` + `Pragma: no-cache` on every token response |
+| 8 | Refreshed id_token carried a **moving** `auth_time` (same bug as #1, second site) | OIDCC-12.2 | `RefreshTokenData` persists auth_time through **every** rotation — verify across two hops, a naive fix survives only one |
+
+**Ordering matters:** #7 and #8 were undiscoverable until `client2` existed, because `oidcc-refresh-token`
+could not start without it. Treat a "green" plan with unfilled config blocks as **untested**, not passing.
 
 ## Deferred: docker self-host (Story 10.5a)
 
@@ -106,6 +165,47 @@ Re-seed the client with the emobix redirect base (`seed-conformance --redirect-b
 https://localhost.emobix.co.uk:8443`) since the default base targets the hosted suite.
 </details>
 
+<a id="results"></a>
+## Results (2026-07-19)
+
+| Plan | Plan ID | Outcome |
+|---|---|---|
+| `oidcc-config-certification-test-plan` | `Rc7CUe5MQqD0P` | 36 SUCCESS / **0 FAILURE** |
+| `oidcc-basic-certification-test-plan` | `ZyytN9FAD5ZeJ` | 35 modules — 22 PASSED, 5 WARNING, 4 SKIPPED, 4 REVIEW, **0 FAILED** |
+
+Both plans are published; the URLs below were verified to render for an **anonymous** visitor:
+
+- Basic: <https://www.certification.openid.net/plan-detail.html?plan=ZyytN9FAD5ZeJ&public=true>
+- Config: <https://www.certification.openid.net/plan-detail.html?plan=Rc7CUe5MQqD0P&public=true>
+
+Submission zips in `_bmad-output/test-artifacts/conformance/2026-07-19/`:
+`oidcc-basic-certification-test-plan-discovery-static_client-ZyytN9FAD5ZeJ-20-Jul-2026.zip` (1.35 MB) and
+`oidcc-config-certification-test-plan-Rc7CUe5MQqD0P-20-Jul-2026.zip` (23 KB).
+
+> ⚠️ **"Publish for certification" is irreversible.** It publishes the plan, makes **all keys and secrets
+> publicly visible**, and marks the plan **permanently immutable** — you can never run another test under
+> it. Do it only when the plan is final. The seeded `conformance-basic*` secrets are now public: they are
+> throwaway fixtures on a torn-down tunnel, but must never be reused anywhere real.
+
+### The 13 non-PASSED results are all legitimate
+
+Not defects — do not "fix" these by inventing fixture data:
+
+- **4 REVIEW** — screenshot-backed modules (see [Driving the run](#driving-the-run)). 0 FAILURE each.
+- **4 SKIPPED** — `scope-address` / `scope-phone` / `scope-all` are not in `scopes_supported`;
+  `oidcc-unsigned-request-object-…` skips *because* the OP now correctly rejects request objects.
+- **5 WARNING**, all SHOULD-level or fixture-shaped:
+  - `scope-profile`, `claims-essential` — the seeded user has no `name`/profile claims, and the `claims`
+    request parameter is correctly advertised as unsupported. `scope-email` passes precisely *because*
+    that user does have email claims, which is the proof this is fixture data and not a UserInfo bug.
+  - `userinfo-post-body` — access token in the POST body (RFC 6750 §2.2) is an **optional** transport;
+    only the `Authorization` header is required.
+  - `ensure-request-with-acr-values` — no `acr` claim returned; SHOULD, not MUST (OIDCC-15.1).
+  - `codereuse-30seconds` — access token not revoked on code replay; SHOULD (RFC 6749 §4.1.2).
+
+Known cosmetic issue: the redirect-URI error page renders as **raw JSON**, not a styled page. It satisfies
+the security requirement (it does not redirect to an unregistered URI) but is a poor end-user experience.
+
 ## Deferred to v1.1 (verified reasons)
 
 - `oidcc-formpost-certification-test-plan` — RufistoWard has no `response_mode=form_post`.
@@ -118,8 +218,18 @@ https://localhost.emobix.co.uk:8443`) since the default base targets the hosted 
   WebRunner URL match is case-sensitive; `/Login*` fails with "unexpected url for task: Login").
 - Login form selectors: `#username`, `#password`, submit `[data-testid="login-button"]`. No consent screen.
 - Issuer config key: `Token:Issuer`. Schema built on boot via `Database:AutoMigrateOnStartup=true`.
-- Admin user seeded by the `seed-admin` CLI command; the conformance client + login test user are
-  seeded deterministically by the `seed-conformance` CLI command (client `conformance-basic`, secret
-  `conformance-basic-secret`, user `testuser@conformance.local` / `Conformance!1`). Scopes are not
-  DB-backed — discovery advertises `openid profile email` statically and the authorize/token flow
-  passes scopes through, so no scope seeding is needed.
+- Admin user seeded by the `seed-admin` CLI command; the conformance fixtures are seeded
+  deterministically by the `seed-conformance` CLI command:
+  - client `conformance-basic` / `conformance-basic-secret`
+  - **second client `conformance-basic-2` / `conformance-basic-2-secret`** — required by
+    `oidcc-refresh-token`, which checks a refresh token issued to one client cannot be redeemed by
+    another. It must be a genuinely separate client, not an alias.
+  - user `testuser@conformance.local` / `Conformance!1`
+  Scopes are not DB-backed — discovery advertises `openid profile email` statically and the
+  authorize/token flow passes scopes through, so no scope seeding is needed.
+- The OP accepts **both** `client_secret_basic` and `client_secret_post` (`TokenEndpoints` falls back to
+  the form `client_id`), and discovery advertises both — so the plan's "client for client_secret_post"
+  block can safely reuse the primary client.
+- `Token:Issuer` must match the tunnel host exactly. The suite UI **remembers the last plan's config**,
+  so on a new tunnel the pre-filled discovery URL is stale — overwrite it or the run silently targets a
+  dead host.

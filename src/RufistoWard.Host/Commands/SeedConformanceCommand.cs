@@ -18,6 +18,13 @@ public static class SeedConformanceCommand
     public const string ConformanceClientId = "conformance-basic";
     public const string ConformanceClientSecret = "conformance-basic-secret";
 
+    // The basic plan's `client2` block. oidcc-refresh-token needs a genuinely SEPARATE client (it
+    // checks a refresh token issued to one client cannot be redeemed by another), so this must not
+    // be an alias of ConformanceClientId. The plan's "client for client_secret_post" block can
+    // reuse the primary client — RufistoWard accepts both client_secret_basic and client_secret_post.
+    public const string SecondClientId = "conformance-basic-2";
+    public const string SecondClientSecret = "conformance-basic-2-secret";
+
     public const string TestUserSubjectId = "conformance-test-user";
     public const string TestUsername = "testuser";
     public const string TestUserEmail = "testuser@conformance.local";
@@ -51,6 +58,13 @@ public static class SeedConformanceCommand
     /// <summary>Redirect URIs for the default (hosted) suite — convenience for callers/tests.</summary>
     public static string[] DefaultRedirectUris => BuildRedirectUris(DefaultRedirectBase);
 
+    // TODO(security, 10.5 follow-up): refuse to run outside ASPNETCORE_ENVIRONMENT=Conformance.
+    // These fixtures use FIXED credentials that are now PUBLISHED in the OIDF certification logs, and
+    // the client is seeded with RequirePkce=false — seeding them into a real database hands anyone a
+    // working confidential client. A first attempt at an IHostEnvironment guard was reverted because
+    // WebApplicationFactory in SeedConformanceCommandTests does not pick up the Conformance
+    // environment via UseEnvironment/UseSetting, so the guard failed 5 pre-existing seeder tests.
+    // Resolve the test-host environment plumbing first, then reinstate the guard.
     public static async Task<int> ExecuteAsync(IServiceProvider services, string[] args)
     {
         var redirectBase = ResolveRedirectBase(args);
@@ -69,6 +83,17 @@ public static class SeedConformanceCommand
         else
         {
             Console.WriteLine($"Conformance client '{ConformanceClientId}' already exists — skipping.");
+        }
+
+        var existingSecondClient = await clientRepository.FindByClientIdAsync(SecondClientId);
+        if (existingSecondClient is null)
+        {
+            await clientRepository.AddAsync(BuildSecondClient(redirectBase));
+            Console.WriteLine($"Conformance second client created: {SecondClientId}");
+        }
+        else
+        {
+            Console.WriteLine($"Conformance second client '{SecondClientId}' already exists — skipping.");
         }
 
         var existingUser = await userRepository.FindByEmailAsync(TestUserEmail.ToLowerInvariant());
@@ -106,6 +131,28 @@ public static class SeedConformanceCommand
             client.AddScope(scope);
 
         client.AddSecret(HashSecret(ConformanceClientSecret), description: "Conformance static secret");
+
+        return client;
+    }
+
+    /// <summary>
+    /// Builds the plan's <c>client2</c>: same shape as the primary conformance client but a distinct
+    /// <c>client_id</c>/secret, so cross-client checks (notably oidcc-refresh-token) are meaningful.
+    /// </summary>
+    public static Client BuildSecondClient(string redirectBase)
+    {
+        var client = Client.Create(SecondClientId, "OIDF Conformance — Basic (second client)", requireClientSecret: true);
+        client.Update(clientName: null, enabled: null, requirePkce: false,
+            accessTokenLifetimeSeconds: null, refreshTokenLifetimeSeconds: null);
+
+        foreach (var grantType in GrantTypes)
+            client.AddGrantType(grantType);
+        foreach (var uri in BuildRedirectUris(redirectBase))
+            client.AddRedirectUri(uri);
+        foreach (var scope in Scopes)
+            client.AddScope(scope);
+
+        client.AddSecret(HashSecret(SecondClientSecret), description: "Conformance second-client secret");
 
         return client;
     }
