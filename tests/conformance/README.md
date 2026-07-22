@@ -64,8 +64,12 @@ cloudflared tunnel run rufistoward        # → https://rufistoward.<yourdomain>
 ASPNETCORE_ENVIRONMENT=Conformance dotnet run --project ../../src/RufistoWard.Host
 
 # 3) Seed the conformance client + login test user (default redirect base = the HOSTED suite).
-dotnet ../../src/RufistoWard.Host/bin/.../RufistoWard.Host.dll seed-conformance
-#    (or `dotnet run --project ../../src/RufistoWard.Host -- seed-conformance`)
+#    ASPNETCORE_ENVIRONMENT=Conformance is REQUIRED — seed-conformance refuses to run anywhere
+#    else and exits 1 (see "Why the seeder refuses to run" below). This is a SEPARATE process
+#    from step 2, so it does NOT inherit that step's inline environment variable.
+ASPNETCORE_ENVIRONMENT=Conformance \
+  dotnet ../../src/RufistoWard.Host/bin/.../RufistoWard.Host.dll seed-conformance
+#    (or `ASPNETCORE_ENVIRONMENT=Conformance dotnet run --project ../../src/RufistoWard.Host -- seed-conformance`)
 
 # 4) Confirm discovery is publicly reachable over valid https:
 curl https://rufistoward.<yourdomain>/.well-known/openid-configuration
@@ -101,6 +105,27 @@ Then in the hosted suite UI (`https://www.certification.openid.net`):
 requires an `ngrok-skip-browser-warning` header that breaks both the suite's browser and its server calls.
 A stable hostname keeps the seeded redirect URIs valid across runs. This exposes a dev instance publicly:
 seed only the conformance fixtures, use a throwaway Postgres, tear the tunnel down afterward.
+
+<a id="why-the-seeder-refuses"></a>
+**Why the seeder refuses to run.** `seed-conformance` exits 1 unless `ASPNETCORE_ENVIRONMENT=Conformance`.
+This is deliberate (Story 10.5b). The fixtures use fixed credentials — `conformance-basic` /
+`conformance-basic-secret` and `testuser@conformance.local` / `Conformance!1` — which are **published in
+the OIDF certification logs**, and the client is seeded with `RequirePkce=false`. Seeding them into a
+real database hands anyone a working confidential client. If you see
+
+```
+Refusing to seed: seed-conformance requires ASPNETCORE_ENVIRONMENT=Conformance, but the host is
+running as 'Development'.
+```
+
+set the variable *on the seeding command itself* — it is a separate process from the running OP and does
+not inherit the OP's environment.
+
+A caveat when running the OP in the Conformance environment: the host will load
+`src/RufistoWard.Host/appsettings.Conformance.json` if you have created one (the runbook tells you to;
+it is git-ignored). That file sets `Database:AutoMigrateOnStartup=true`. That is what you want for a real
+run, but it means the environment carries real database behaviour with it — which is exactly why the
+seeder tests pin the flag off rather than relying on config-source clearing.
 
 <a id="driving-the-run"></a>
 ## Driving the run

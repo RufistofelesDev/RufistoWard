@@ -58,15 +58,31 @@ public static class SeedConformanceCommand
     /// <summary>Redirect URIs for the default (hosted) suite — convenience for callers/tests.</summary>
     public static string[] DefaultRedirectUris => BuildRedirectUris(DefaultRedirectBase);
 
-    // TODO(security, 10.5 follow-up): refuse to run outside ASPNETCORE_ENVIRONMENT=Conformance.
-    // These fixtures use FIXED credentials that are now PUBLISHED in the OIDF certification logs, and
-    // the client is seeded with RequirePkce=false — seeding them into a real database hands anyone a
-    // working confidential client. A first attempt at an IHostEnvironment guard was reverted because
-    // WebApplicationFactory in SeedConformanceCommandTests does not pick up the Conformance
-    // environment via UseEnvironment/UseSetting, so the guard failed 5 pre-existing seeder tests.
-    // Resolve the test-host environment plumbing first, then reinstate the guard.
+    /// <summary>
+    /// The only host environment in which seeding is permitted. See the guard in
+    /// <see cref="ExecuteAsync"/> for why this is enforced rather than merely documented.
+    /// </summary>
+    public const string RequiredEnvironment = "Conformance";
+
     public static async Task<int> ExecuteAsync(IServiceProvider services, string[] args)
     {
+        // SECURITY (Story 10.5b): these fixtures use FIXED credentials that are now PUBLISHED in the
+        // OIDF certification logs, and the client is seeded with RequirePkce=false. Seeding them into
+        // a real database hands anyone a working confidential client, so refuse anywhere but the
+        // Conformance environment. This must stay BEFORE any write below — an exit code alone is not
+        // a guard if the rows have already landed.
+        var environment = services.GetRequiredService<IHostEnvironment>();
+        if (!environment.IsEnvironment(RequiredEnvironment))
+        {
+            Console.Error.WriteLine(
+                $"Refusing to seed: seed-conformance requires ASPNETCORE_ENVIRONMENT={RequiredEnvironment}, "
+                + $"but the host is running as '{environment.EnvironmentName}'.");
+            Console.Error.WriteLine(
+                "These fixtures use fixed, publicly-known credentials (published in the OIDF "
+                + "certification logs) and disable PKCE. They must never reach a real database.");
+            return 1;
+        }
+
         var redirectBase = ResolveRedirectBase(args);
 
         using var scope = services.CreateScope();

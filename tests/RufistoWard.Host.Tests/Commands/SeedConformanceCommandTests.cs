@@ -1,5 +1,6 @@
 namespace RufistoWard.Core.Tests.Commands;
 
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -37,6 +38,25 @@ public sealed class SeedConformanceCommandTests
         return new WebApplicationFactory<Program>()
             .WithWebHostBuilder(builder =>
             {
+                // The command refuses to run outside Conformance (SeedConformanceGuardTests covers
+                // the refusal itself); these tests exercise the seeding, so they must satisfy it.
+                builder.UseEnvironment(SeedConformanceCommand.RequiredEnvironment);
+
+                // Pin auto-migration OFF. Selecting the Conformance environment makes the test host
+                // load any local, git-ignored appsettings.Conformance.json from the Host content root
+                // — the Story 10.5 runbook tells developers to create one, and it sets
+                // AutoMigrateOnStartup=true. That registers a hosted service which calls relational
+                // MigrateAsync against this InMemory provider and throws
+                // "Relational-specific methods can only be used when the context is using a
+                // relational database provider". UseSetting lands in configuration before Program
+                // reads the flag, so the hosted service is never registered.
+                //
+                // Note Sources.Clear() below does NOT prevent this on its own: the registration
+                // decision is made from builder.Configuration inside Program, before this callback
+                // applies. Without the pin, these tests pass or fail depending on whether the
+                // developer has ever run a conformance session.
+                builder.UseSetting("Database:AutoMigrateOnStartup", "false");
+
                 builder.ConfigureAppConfiguration((_, config) =>
                 {
                     config.Sources.Clear();

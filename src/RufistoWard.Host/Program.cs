@@ -48,6 +48,10 @@ if (args.Length > 0)
 
     if (exitCode >= 0)
     {
+        // Propagate the command's result to the process. Without this every CLI verb exits 0, so a
+        // script doing `seed-conformance || exit 1` reads a refusal — or any seeding failure — as
+        // success. (-1 is the "not a CLI verb" sentinel and falls through to the HTTP pipeline.)
+        Environment.ExitCode = exitCode;
         return;
     }
 }
