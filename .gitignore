@@ -46,8 +46,16 @@ tools/
 # BMAD tooling installation (each developer installs locally via BMAD installer)
 _bmad/
 
-# BMAD auto-generated test artifacts (not source of truth)
-_bmad-output/test-artifacts/
+# BMAD auto-generated test artifacts (not source of truth).
+# NOTE: this must exclude the directory's *contents* (trailing /*), not the directory itself —
+# git cannot re-include anything inside an excluded directory, so the conformance
+# negation below would silently do nothing if this were `test-artifacts/`.
+_bmad-output/test-artifacts/*
+
+# ...except conformance runs. An OIDF plan that has been published for certification is
+# PERMANENTLY IMMUTABLE and can never be re-run, so these bundles are irreplaceable
+# certification evidence, not regenerable test output. Story 10.5 AC-2 requires them in-repo.
+!_bmad-output/test-artifacts/conformance/
 
 # Note: .github/ and _bmad-output/ (except test-artifacts/) are now tracked.
 # Planning artifacts, stories, sprint status, and CI workflows are project source of truth.
