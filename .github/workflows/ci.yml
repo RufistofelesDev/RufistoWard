@@ -37,5 +37,4 @@ jobs:
           --filter "Category!=Database&Category!=Integration&Category!=Conformance"
 
       # Coverage + trx artifact upload deferred — requires coverlet.collector
-      # added to test projects. See Story 10.1a (follow-up) or v1.1 coverage
-      # thresholds bar in .claude/standards.md.
+      # added to test projects (v1.1 coverage-thresholds follow-up).

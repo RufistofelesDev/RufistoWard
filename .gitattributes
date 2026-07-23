@@ -1,7 +1,21 @@
 ###############################################################################
 # Set default behavior to automatically normalize line endings.
+# LF in the repository and in the working tree on every platform, so the
+# canonical line ending is unambiguous and .editorconfig (end_of_line = lf)
+# always agrees with what is checked out.
 ###############################################################################
-* text=auto
+* text=auto eol=lf
+
+###############################################################################
+# Binary assets — never normalized or diffed as text.
+###############################################################################
+*.woff2 binary
+*.woff  binary
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.gif   binary
+*.ico   binary
 
 ###############################################################################
 # Shell scripts MUST stay LF in the working tree, even on Windows. CRLF in the
