@@ -30,7 +30,7 @@ RufistoWard is a standalone OAuth2 and OpenID Connect identity server built on .
 - **Security**
   - RSA/EC signing key generation and automatic rotation
   - OWASP security headers on every response
-  - Strict CSP (no `unsafe-inline`, no `unsafe-eval`)
+  - Content-Security-Policy on every response (`default-src 'self'`, `frame-ancestors 'none'`, no `unsafe-eval`; `unsafe-inline` still required for inline HTMX attributes and styles)
   - Rate limiting on protocol endpoints
   - Encrypted secrets at rest
   - Adaptive password hashing (bcrypt)
@@ -204,7 +204,7 @@ src/
 
 ### Key Design Decisions
 
-- **No SPA** — Server-rendered Razor Pages with HTMX for interactivity. Zero client-side framework dependencies. Strict CSP compliance.
+- **No SPA** — Server-rendered Razor Pages with HTMX for interactivity. Zero client-side framework dependencies, so the CSP restricts to `'self'` with no `unsafe-eval` and no framing.
 - **Manual JWT building** — Uses `System.Security.Cryptography` directly. No dependency on `Microsoft.IdentityModel`.
 - **Pluggable boundaries** — Database provider, key storage, and rate limiter are abstracted behind interfaces for future extensibility.
 - **HybridCache** — Discovery and JWKS responses are cached with both in-memory and HTTP caching layers.
@@ -270,7 +270,7 @@ Entity configurations are provider-agnostic — only the generated migration SQL
 | .NET native | Yes | Yes | No (Java) | Yes |
 | Built-in Admin UI | Yes | No | Yes | Yes |
 | IS4 migration tooling | Yes | Upgrade path | No | No |
-| CSP compliant | Yes (strict) | Partial | Partial | Partial |
+| CSP enforced | Yes | Partial | Partial | Partial |
 | No JS framework required | Yes (HTMX) | N/A | React | Blazor |
 
 Read that first row honestly: **RufistoWard is the most restrictive open-source licence in
