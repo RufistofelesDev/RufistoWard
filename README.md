@@ -52,7 +52,7 @@ RufistoWard is a standalone OAuth2 and OpenID Connect identity server built on .
 ### 1. Clone and build
 
 ```bash
-git clone https://github.com/your-org/RufistoWard.git
+git clone https://github.com/RufistofelesDev/RufistoWard.git
 cd RufistoWard
 dotnet build RufistoWard.slnx
 ```
