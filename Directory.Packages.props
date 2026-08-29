@@ -29,9 +29,15 @@
     <PackageVersion Include="Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore" Version="10.0.5" />
     <!-- Identity -->
     <PackageVersion Include="Microsoft.Extensions.Identity.Core" Version="10.0.5" />
-    <!-- Data Protection — bumped to 10.0.8 for GHSA-9mv3-2cwr-p262 (critical, affects <=10.0.6) -->
-    <PackageVersion Include="Microsoft.AspNetCore.DataProtection.Abstractions" Version="10.0.8" />
-    <PackageVersion Include="Microsoft.AspNetCore.DataProtection" Version="10.0.8" />
+    <!-- Data Protection — 10.0.11. Was 10.0.8 for GHSA-9mv3-2cwr-p262 (critical, affects <=10.0.6);
+         10.0.8 then went vulnerable itself when five .NET advisories landed on its transitive
+         System.Security.Cryptography.Xml 10.0.8 on 2026-07-20/21 (CVE-2026-47302, -47304, -50525,
+         -50527, -50648; all high, all fixed in 10.0.10). Nothing here changed — the advisories did.
+         Abstractions moves with it because central pinning would otherwise force a downgrade.
+         Only the test project references the full package; the shipped Host graph carries neither
+         it nor Cryptography.Xml. -->
+    <PackageVersion Include="Microsoft.AspNetCore.DataProtection.Abstractions" Version="10.0.11" />
+    <PackageVersion Include="Microsoft.AspNetCore.DataProtection" Version="10.0.11" />
     <!-- Caching (used from Story 2.1 onward) -->
     <PackageVersion Include="Microsoft.Extensions.Caching.Hybrid" Version="10.1.0" />
   </ItemGroup>
