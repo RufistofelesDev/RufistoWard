@@ -36,29 +36,35 @@ tools/
 .idea/
 *.sln.iml
 
-# Claude Code session-local state (per-developer, not checked in)
-.claude/settings.local.json
-.claude/projects/
-.claude/skills/
+# Agent tooling and session-local state. Whole directories, not selected files.
+#
+# The July 2026 history rewrite removed .claude/handoff.md and .claude/standards.md from every
+# commit: they carried a dead tunnel hostname, local absolute paths, references to a throwaway
+# Postgres password and session notes. Only three subpaths under .claude/ were ignored, so those
+# two files were one `git add -A` from returning to a public repository. .agents/ (943 files) was
+# not ignored at all. Ignore the directories, so the decision is enforced rather than remembered.
+.claude/
+.agents/
 .opencode/
 .tmp/
 
 # BMAD tooling installation (each developer installs locally via BMAD installer)
 _bmad/
 
-# BMAD auto-generated test artifacts (not source of truth).
-# NOTE: this must exclude the directory's *contents* (trailing /*), not the directory itself —
-# git cannot re-include anything inside an excluded directory, so the conformance
-# negation below would silently do nothing if this were `test-artifacts/`.
-_bmad-output/test-artifacts/*
-
-# ...except conformance runs. An OIDF plan that has been published for certification is
-# PERMANENTLY IMMUTABLE and can never be re-run, so these bundles are irreplaceable
-# certification evidence, not regenerable test output. Story 10.5 AC-2 requires them in-repo.
-!_bmad-output/test-artifacts/conformance/
-
-# Note: .github/ and _bmad-output/ (except test-artifacts/) are now tracked.
-# Planning artifacts, stories, sprint status, and CI workflows are project source of truth.
+# Design corpus: planning and implementation artifacts, and any generated test artifacts.
+#
+# Removed from every commit by the July 2026 history rewrite, and that decision stands. The copy
+# on disk is a working knowledge base, not repository content.
+#
+# What used to be here, and why it is gone: a rule excluded _bmad-output/test-artifacts/* while
+# re-including test-artifacts/conformance/, on the reasoning that a published OIDF plan is
+# permanently immutable and its bundles are irreplaceable certification evidence rather than
+# regenerable output. That reasoning was right and the rule is now a dead letter — an exclusion of
+# the whole directory means git cannot re-include anything inside it, and the bundles are in any
+# case no longer on disk or in the history. The published results still live with the OIDF; the
+# in-repo copies did not survive the rewrite. Do not restore the negation without first restoring
+# the files and re-deciding whether they should be public.
+_bmad-output/
 
 # Local conformance run config (contains local Postgres credentials; docker template lives in tests/conformance/config)
 src/RufistoWard.Host/appsettings.Conformance.json
@@ -71,3 +77,8 @@ Thumbs.db
 ehthumbs.db
 Desktop.ini
 _test-output/
+
+# Vigil corpus manifest. Untracked on purpose: it names _bmad-output/planning-artifacts and
+# _bmad-output/implementation-artifacts as sources, so publishing it would publish a map of exactly
+# the material the history rewrite removed from this repository.
+vigil.product.json
