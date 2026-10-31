@@ -27,10 +27,30 @@ builder.Services.AddAuthentication("IdentityServerCookie")
         options.Cookie.SameSite = SameSiteMode.Lax;
         options.ExpireTimeSpan = TimeSpan.FromMinutes(30);
         options.SlidingExpiration = true;
+
+        // The admin API answers with status codes, not a redirect to an HTML login page. A signed-in
+        // non-admin gets a plain 403 everywhere: there is no access-denied page to send them to.
+        options.Events.OnRedirectToLogin = context =>
+        {
+            if (context.Request.Path.StartsWithSegments("/api"))
+            {
+                context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                return Task.CompletedTask;
+            }
+
+            context.Response.Redirect(context.RedirectUri);
+            return Task.CompletedTask;
+        };
+        options.Events.OnRedirectToAccessDenied = context =>
+        {
+            context.Response.StatusCode = StatusCodes.Status403Forbidden;
+            return Task.CompletedTask;
+        };
     });
 
-builder.Services.AddAuthorization();
-builder.Services.AddRazorPages();
+builder.Services.AddRufistoWardAdminAuthorization();
+builder.Services.AddRazorPages(options =>
+    options.Conventions.AuthorizeFolder("/Admin", AdminAuthorization.Policy));
 
 var app = builder.Build();
 

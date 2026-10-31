@@ -12,6 +12,8 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using RufistoWard.Core.Bootstrap;
+using RufistoWard.Identity.Entities;
 using RufistoWard.Tokens.Persistence;
 
 [Trait("Category", "Integration")]
@@ -33,7 +35,28 @@ public sealed class AdminApiTests
         ["RateLimits:TokenEndpointWindowSeconds"] = "60",
     };
 
+    private const string AdminSubjectId = "test-admin";
+
+    /// <summary>
+    /// The test scheme authenticates every request as <see cref="AdminSubjectId"/>, and that user is
+    /// seeded as a real rufistoward-admin — the admin policy checks the database, not the claims.
+    /// </summary>
     private static WebApplicationFactory<Program> CreateFactory()
+    {
+        var factory = CreateUnseededFactory();
+        using var scope = factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<RufistoWardDbContext>();
+        var role = Role.Create(AdminAuthorization.RoleName);
+        db.Roles.Add(role);
+        db.SaveChanges();
+        var admin = User.Create(AdminSubjectId, "test-admin", "test-admin@rufistoward.test", "unused-hash");
+        admin.AssignRole(role.Id);
+        db.Users.Add(admin);
+        db.SaveChanges();
+        return factory;
+    }
+
+    private static WebApplicationFactory<Program> CreateUnseededFactory()
     {
         var dbName = $"AdminTests-{Guid.NewGuid()}";
         return new WebApplicationFactory<Program>()
@@ -74,7 +97,7 @@ public sealed class AdminApiTests
     {
         protected override Task<AuthenticateResult> HandleAuthenticateAsync()
         {
-            var claims = new[] { new Claim(ClaimTypes.Name, "admin"), new Claim(ClaimTypes.Role, "Admin") };
+            var claims = new[] { new Claim(ClaimTypes.Name, "admin"), new Claim("sub", AdminSubjectId) };
             var identity = new ClaimsIdentity(claims, "TestScheme");
             var principal = new ClaimsPrincipal(identity);
             var ticket = new AuthenticationTicket(principal, "TestScheme");

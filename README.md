@@ -93,6 +93,14 @@ dotnet run --project src/RufistoWard.Host -- seed-admin \
     --password Admin123!
 ```
 
+This user holds the `rufistoward-admin` role. Only active users with that role can use `/admin`
+and `/api/admin/*`; signing in alone is not enough. Seed a second admin with `--username <name>`.
+
+> **Upgrading from v1.0-rc1:** rc1 did not protect the admin UI at all
+> ([advisory](https://github.com/RufistofelesDev/RufistoWard/security/advisories)). After
+> upgrading, re-run `seed-admin` with your existing admin's email — it grants the role and leaves
+> the password unchanged. Review your clients and users for anything you did not create.
+
 ### 5. Start the server
 
 ```bash

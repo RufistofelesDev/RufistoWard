@@ -1,5 +1,6 @@
 namespace RufistoWard.Core.Endpoints.Admin;
 
+using RufistoWard.Core.Bootstrap;
 using Microsoft.EntityFrameworkCore;
 using RufistoWard.Auth.Admin.Common;
 using RufistoWard.Auth.Admin.Roles;
@@ -12,7 +13,7 @@ public static class RoleAdminEndpoints
     public static IEndpointRouteBuilder MapRoleAdminEndpoints(this IEndpointRouteBuilder endpoints)
     {
         var group = endpoints.MapGroup("/api/admin/roles")
-            .RequireAuthorization();
+            .RequireAuthorization(AdminAuthorization.Policy);
 
         group.MapGet("/", async (
             RufistoWardDbContext db,
