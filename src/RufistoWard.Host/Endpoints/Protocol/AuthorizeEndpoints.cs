@@ -2,7 +2,10 @@ namespace RufistoWard.Core.Endpoints.Protocol;
 
 using System.Globalization;
 using System.Security.Claims;
+using System.Text;
+using System.Text.Encodings.Web;
 using System.Web;
+using Microsoft.AspNetCore.WebUtilities;
 using RufistoWard.Auth.Protocol.Authorization;
 using RufistoWard.Identity.Interfaces;
 
@@ -74,6 +77,7 @@ public static class AuthorizeEndpoints
             Nonce = param("nonce"),
             Request = param("request"),
             RequestUri = param("request_uri"),
+            ResponseMode = param("response_mode"),
         };
 
         var prompts = (param("prompt") ?? string.Empty)
@@ -98,7 +102,13 @@ public static class AuthorizeEndpoints
 
             if (canRedirect)
             {
-                return Results.Redirect(BuildErrorRedirect(request.RedirectUri!, error.Code, error.Description, request.State));
+                // Validation failed, so response_mode was never validated: honour form_post only when it
+                // was asked for explicitly, and fall back to query for anything else, including an
+                // unsupported mode — that is the very error being reported.
+                var errorMode = string.Equals(request.ResponseMode, ResponseModes.FormPost, StringComparison.Ordinal)
+                    ? ResponseModes.FormPost
+                    : ResponseModes.Query;
+                return ErrorResponse(httpContext, request.RedirectUri!, errorMode, error.Code, error.Description, request.State);
             }
 
             return Results.BadRequest(new { error = error.Code, error_description = error.Description });
@@ -109,11 +119,13 @@ public static class AuthorizeEndpoints
         // OIDCC-3.1.2.1: "none" must not be combined with any other prompt value.
         if (promptNone && prompts.Length > 1)
         {
-            return Results.Redirect(BuildErrorRedirect(
+            return ErrorResponse(
+                httpContext,
                 validated.RedirectUri,
+                validated.ResponseMode,
                 "invalid_request",
                 "prompt=none must not be combined with other prompt values.",
-                validated.State));
+                validated.State);
         }
 
         var user = httpContext.User;
@@ -136,11 +148,13 @@ public static class AuthorizeEndpoints
             // OIDCC-3.1.2.6: prompt=none forbids any UI, so an unusable session is an error, not a login page.
             if (promptNone)
             {
-                return Results.Redirect(BuildErrorRedirect(
+                return ErrorResponse(
+                    httpContext,
                     validated.RedirectUri,
+                    validated.ResponseMode,
                     "login_required",
                     "Authentication is required but prompt=none was requested.",
-                    validated.State));
+                    validated.State);
             }
 
             // Re-enter authorize as a GET once the user has authenticated. prompt=login is dropped from
@@ -154,18 +168,16 @@ public static class AuthorizeEndpoints
 
         var authorizationCode = await codeGenerator.GenerateAsync(subjectId, validated, authTime, cancellationToken);
 
-        var redirectUrl = $"{validated.RedirectUri}?code={authorizationCode}";
-        if (!string.IsNullOrEmpty(validated.State))
-        {
-            redirectUrl += $"&state={HttpUtility.UrlEncode(validated.State)}";
-        }
-
-        return Results.Redirect(redirectUrl);
+        return Respond(httpContext, validated.RedirectUri, validated.ResponseMode,
+        [
+            new("code", authorizationCode),
+            new("state", validated.State),
+        ]);
     }
 
     private static readonly string[] ForwardedParameters =
     [
-        "response_type", "client_id", "redirect_uri", "scope", "state",
+        "response_type", "response_mode", "client_id", "redirect_uri", "scope", "state",
         "code_challenge", "code_challenge_method", "nonce", "max_age",
         "login_hint", "ui_locales", "claims_locales", "acr_values", "id_token_hint", "display",
     ];
@@ -208,14 +220,52 @@ public static class AuthorizeEndpoints
             : null;
     }
 
-    private static string BuildErrorRedirect(string redirectUri, string code, string? description, string? state)
+    private static IResult ErrorResponse(
+        HttpContext httpContext, string redirectUri, string responseMode, string code, string? description, string? state)
+        => Respond(httpContext, redirectUri, responseMode,
+        [
+            new("error", code),
+            new("error_description", description),
+            new("state", state),
+        ]);
+
+    /// <summary>
+    /// Delivers an authorization response to an already-validated redirect_uri in the requested
+    /// response mode. Empty parameters are omitted.
+    /// </summary>
+    private static IResult Respond(
+        HttpContext httpContext, string redirectUri, string responseMode, KeyValuePair<string, string?>[] parameters)
     {
-        var url = $"{redirectUri}?error={code}&error_description={HttpUtility.UrlEncode(description)}";
-        if (!string.IsNullOrEmpty(state))
+        var present = parameters.Where(p => !string.IsNullOrEmpty(p.Value)).ToArray();
+
+        // The scheme check repeats validation on purpose: this is the sink. Error paths reach here
+        // with a response mode that was never validated, and a javascript: action would run script
+        // on this origin. A Location header with such a scheme is not executed by browsers.
+        if (!string.Equals(responseMode, ResponseModes.FormPost, StringComparison.Ordinal)
+            || !ResponseModes.CanFormPostTo(redirectUri))
         {
-            url += $"&state={HttpUtility.UrlEncode(state)}";
+            // AddQueryString appends with '&' when the registered redirect_uri already has a query.
+            return Results.Redirect(QueryHelpers.AddQueryString(redirectUri, present));
         }
 
-        return url;
+        // Form Post Response Mode: an HTML page that POSTs the parameters to the redirect_uri, so the
+        // code never appears in a URL, browser history or a Referer header. The inline onload is
+        // covered by the CSP's script-src 'unsafe-inline'; <noscript> keeps it usable without script.
+        var html = new StringBuilder()
+            .Append("<!DOCTYPE html><html><head><meta charset=\"utf-8\"><title>Continue</title></head>")
+            .Append("<body onload=\"document.forms[0].submit()\">")
+            .Append(CultureInfo.InvariantCulture, $"<form method=\"post\" action=\"{HtmlEncoder.Default.Encode(redirectUri)}\">");
+
+        foreach (var (name, value) in present)
+        {
+            html.Append(CultureInfo.InvariantCulture,
+                $"<input type=\"hidden\" name=\"{HtmlEncoder.Default.Encode(name)}\" value=\"{HtmlEncoder.Default.Encode(value!)}\">");
+        }
+
+        html.Append("<noscript><button type=\"submit\">Continue</button></noscript></form></body></html>");
+
+        httpContext.Response.Headers.CacheControl = "no-store";
+        httpContext.Response.Headers.Pragma = "no-cache";
+        return Results.Content(html.ToString(), "text/html; charset=utf-8");
     }
 }

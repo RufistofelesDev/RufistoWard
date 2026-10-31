@@ -2,6 +2,7 @@ namespace RufistoWard.Auth.Protocol.Discovery;
 
 using Microsoft.Extensions.Caching.Hybrid;
 using Microsoft.Extensions.Options;
+using RufistoWard.Auth.Protocol.Authorization;
 
 public sealed class DiscoveryService(
     IOptions<DiscoveryOptions> options,
@@ -31,6 +32,7 @@ public sealed class DiscoveryService(
             IntrospectionEndpoint = $"{issuer}/connect/introspect",
             DeviceAuthorizationEndpoint = $"{issuer}/connect/device",
             ResponseTypesSupported = ["code"],
+            ResponseModesSupported = ResponseModes.Supported,
             GrantTypesSupported =
             [
                 "authorization_code",

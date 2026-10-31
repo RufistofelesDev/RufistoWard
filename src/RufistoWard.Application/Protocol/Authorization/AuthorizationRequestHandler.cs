@@ -15,10 +15,29 @@ public sealed record AuthorizeRequest
     public string? Nonce { get; init; }
     public string? Request { get; init; }
     public string? RequestUri { get; init; }
+    public string? ResponseMode { get; init; }
+}
+
+public static class ResponseModes
+{
+    public const string Query = "query";
+    public const string FormPost = "form_post";
+
+    /// <summary>What discovery advertises as <c>response_modes_supported</c>.</summary>
+    public static readonly string[] Supported = [Query, FormPost];
+
+    /// <summary>
+    /// form_post renders the redirect_uri as a form action that submits itself, so anything but
+    /// http(s) — javascript:, data:, a native app's custom scheme — must never reach it.
+    /// </summary>
+    public static bool CanFormPostTo(string redirectUri)
+        => Uri.TryCreate(redirectUri, UriKind.Absolute, out var uri)
+            && (uri.Scheme == Uri.UriSchemeHttps || uri.Scheme == Uri.UriSchemeHttp);
 }
 
 public sealed record ValidatedAuthorizeRequest
 {
+    public required string ResponseMode { get; init; }
     public required string ClientId { get; init; }
     public required string RedirectUri { get; init; }
     public required string Scope { get; init; }
@@ -70,6 +89,22 @@ public sealed class AuthorizationRequestHandler(IClientRepository clientReposito
                 new ProtocolError("invalid_redirect_uri", "The redirect_uri is not registered for this client."));
         }
 
+        // response_mode (OAuth 2.0 Multiple Response Types, Form Post Response Mode). Absent means
+        // query for response_type=code. Anything not advertised is rejected rather than ignored:
+        // a client that asked for form_post and silently got query is relying on its own leniency.
+        var responseMode = string.IsNullOrEmpty(request.ResponseMode) ? ResponseModes.Query : request.ResponseMode;
+        if (!ResponseModes.Supported.Contains(responseMode, StringComparer.Ordinal))
+        {
+            return Result<ValidatedAuthorizeRequest>.Failure(
+                ProtocolError.InvalidRequest($"response_mode '{responseMode}' is not supported."));
+        }
+
+        if (responseMode == ResponseModes.FormPost && !ResponseModes.CanFormPostTo(request.RedirectUri))
+        {
+            return Result<ValidatedAuthorizeRequest>.Failure(
+                ProtocolError.InvalidRequest("response_mode=form_post requires an http or https redirect_uri."));
+        }
+
         // Request objects (OIDCC-6.1/6.2). Discovery advertises neither `request_parameter_supported`
         // nor `request_uri_parameter_supported`, so these MUST be rejected rather than ignored —
         // silently dropping them loses the state/nonce carried inside the object.
@@ -104,6 +139,7 @@ public sealed class AuthorizationRequestHandler(IClientRepository clientReposito
 
         return Result<ValidatedAuthorizeRequest>.Success(new ValidatedAuthorizeRequest
         {
+            ResponseMode = responseMode,
             ClientId = request.ClientId,
             RedirectUri = request.RedirectUri,
             Scope = request.Scope ?? "openid",

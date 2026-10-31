@@ -260,6 +260,125 @@ public sealed class AuthorizeEndpointTests
     }
 
     [Fact]
+    public async Task AuthorizeEndpoint_FormPost_DeliversResponseAsAutoPostingForm()
+    {
+        // Form Post Response Mode: the response is an HTML form POSTed to the redirect_uri, never a
+        // redirect carrying the parameters in the URL. ASP.NET Core's OIDC handler asks for this by default.
+        var ct = TestContext.Current.CancellationToken;
+        const string redirectUri = "https://example.com/cb";
+        using var factory = await CreateFactoryWithClientAsync("form-post", redirectUri);
+        using var client = factory.CreateClient(new WebApplicationFactoryClientOptions
+        {
+            AllowAutoRedirect = false,
+        });
+
+        var response = await client.GetAsync(
+            $"/connect/authorize?response_type=code&client_id=form-post&redirect_uri={redirectUri}&scope=openid&prompt=none&state=xyz&response_mode=form_post",
+            ct);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal("text/html", response.Content.Headers.ContentType!.MediaType);
+        Assert.Contains("no-store", response.Headers.CacheControl!.ToString(), StringComparison.Ordinal);
+        var html = await response.Content.ReadAsStringAsync(ct);
+        Assert.Contains($"<form method=\"post\" action=\"{redirectUri}\">", html, StringComparison.Ordinal);
+        Assert.Contains("name=\"error\" value=\"login_required\"", html, StringComparison.Ordinal);
+        Assert.Contains("name=\"state\" value=\"xyz\"", html, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task AuthorizeEndpoint_FormPost_HtmlEncodesParameters()
+    {
+        // state is attacker-controlled and is written into the page, so it must be encoded.
+        var ct = TestContext.Current.CancellationToken;
+        const string redirectUri = "https://example.com/cb";
+        using var factory = await CreateFactoryWithClientAsync("form-post-xss", redirectUri);
+        using var client = factory.CreateClient(new WebApplicationFactoryClientOptions
+        {
+            AllowAutoRedirect = false,
+        });
+
+        var state = Uri.EscapeDataString("\"><script>alert(1)</script>");
+        var response = await client.GetAsync(
+            $"/connect/authorize?response_type=code&client_id=form-post-xss&redirect_uri={redirectUri}&scope=openid&prompt=none&state={state}&response_mode=form_post",
+            ct);
+
+        var html = await response.Content.ReadAsStringAsync(ct);
+        Assert.DoesNotContain("<script>", html, StringComparison.Ordinal);
+        Assert.Contains("&lt;script&gt;", html, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task AuthorizeEndpoint_FormPost_NeverRendersANonHttpAction()
+    {
+        // A registered javascript: redirect_uri rendered as a self-submitting form action would run
+        // script on the IdP's origin. form_post is refused for it, and the refusal itself must not be
+        // delivered as a form either.
+        var ct = TestContext.Current.CancellationToken;
+        const string redirectUri = "javascript:alert(document.cookie)";
+        using var factory = await CreateFactoryWithClientAsync("form-post-js", redirectUri);
+        using var client = factory.CreateClient(new WebApplicationFactoryClientOptions
+        {
+            AllowAutoRedirect = false,
+        });
+
+        var response = await client.GetAsync(
+            $"/connect/authorize?response_type=code&client_id=form-post-js&redirect_uri={Uri.EscapeDataString(redirectUri)}&scope=openid&prompt=none&response_mode=form_post",
+            ct);
+
+        var body = await response.Content.ReadAsStringAsync(ct);
+        Assert.DoesNotContain("<form", body, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
+        Assert.Contains("error=invalid_request", response.Headers.Location!.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task AuthorizeEndpoint_UnsupportedResponseMode_IsRejectedNotIgnored()
+    {
+        // Discovery advertises query and form_post only. Ignoring another mode would answer in a
+        // shape the client did not ask for; reject it, reported in the default query mode.
+        var ct = TestContext.Current.CancellationToken;
+        const string redirectUri = "https://example.com/cb";
+        using var factory = await CreateFactoryWithClientAsync("mode-fragment", redirectUri);
+        using var client = factory.CreateClient(new WebApplicationFactoryClientOptions
+        {
+            AllowAutoRedirect = false,
+        });
+
+        var response = await client.GetAsync(
+            $"/connect/authorize?response_type=code&client_id=mode-fragment&redirect_uri={redirectUri}&scope=openid&state=abc&response_mode=fragment",
+            ct);
+
+        Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
+        var location = response.Headers.Location!.ToString();
+        Assert.StartsWith(redirectUri + "?", location, StringComparison.Ordinal);
+        Assert.Contains("error=invalid_request", location, StringComparison.Ordinal);
+        Assert.Contains("state=abc", location, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task AuthorizeEndpoint_FormPost_SurvivesTheLoginRoundTrip()
+    {
+        // The request re-enters authorize from the login page's return URL. Dropping response_mode
+        // there turned every form_post request into a query response after sign-in.
+        var ct = TestContext.Current.CancellationToken;
+        const string redirectUri = "https://example.com/cb";
+        using var factory = await CreateFactoryWithClientAsync("mode-login", redirectUri);
+        using var client = factory.CreateClient(new WebApplicationFactoryClientOptions
+        {
+            AllowAutoRedirect = false,
+        });
+
+        var response = await client.GetAsync(
+            $"/connect/authorize?response_type=code&client_id=mode-login&redirect_uri={redirectUri}&scope=openid&response_mode=form_post",
+            ct);
+
+        Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
+        var location = response.Headers.Location!.ToString();
+        Assert.StartsWith("/login", location, StringComparison.Ordinal);
+        Assert.Contains("response_mode%3dform_post", location, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public async Task LoginPage_Renders()
     {
         var ct = TestContext.Current.CancellationToken;

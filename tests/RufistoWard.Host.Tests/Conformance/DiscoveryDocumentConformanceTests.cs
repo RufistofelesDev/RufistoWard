@@ -112,6 +112,24 @@ public sealed class DiscoveryDocumentConformanceTests
     }
 
     [Fact]
+    public async Task Discovery_AdvertisesQueryAndFormPostResponseModes()
+    {
+        // Absent, response_modes_supported defaults to ["query", "fragment"] — neither of which is
+        // what RufistoWard actually supports. State it explicitly.
+        var ct = TestContext.Current.CancellationToken;
+        using var factory = CreateFactory();
+        using var client = factory.CreateClient();
+
+        var content = await (await client.GetAsync("/.well-known/openid-configuration", ct))
+            .Content.ReadAsStringAsync(ct);
+        using var doc = JsonDocument.Parse(content);
+
+        var modes = doc.RootElement.GetProperty("response_modes_supported")
+            .EnumerateArray().Select(m => m.GetString()!).ToArray();
+        Assert.Equal(["query", "form_post"], modes);
+    }
+
+    [Fact]
     public async Task Discovery_SupportsS256CodeChallengeMethod()
     {
         var ct = TestContext.Current.CancellationToken;

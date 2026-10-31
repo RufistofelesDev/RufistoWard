@@ -34,6 +34,9 @@ public sealed record DiscoveryDocument
     [JsonPropertyName("response_types_supported")]
     public required string[] ResponseTypesSupported { get; init; }
 
+    [JsonPropertyName("response_modes_supported")]
+    public required string[] ResponseModesSupported { get; init; }
+
     [JsonPropertyName("grant_types_supported")]
     public required string[] GrantTypesSupported { get; init; }
 
