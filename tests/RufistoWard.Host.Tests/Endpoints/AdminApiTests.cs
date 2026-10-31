@@ -139,6 +139,30 @@ public sealed class AdminApiTests
     }
 
     [Fact]
+    public async Task Clients_Create_WithJavascriptRedirectUri_Returns400AndCreatesNothing()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        using var factory = CreateFactory();
+        using var client = factory.CreateClient();
+
+        var response = await client.PostAsJsonAsync("/api/admin/clients", new
+        {
+            clientName = "Bad App",
+            grantTypes = new[] { "authorization_code" },
+            redirectUris = new[] { "https://example.com/callback", "javascript:alert(document.cookie)" },
+            allowedScopes = new[] { "openid" },
+            requireClientSecret = true,
+        }, ct);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Contains("javascript", await response.Content.ReadAsStringAsync(ct), StringComparison.Ordinal);
+
+        var list = await client.GetAsync("/api/admin/clients", ct);
+        using var doc = JsonDocument.Parse(await list.Content.ReadAsStringAsync(ct));
+        Assert.Equal(0, doc.RootElement.GetProperty("totalCount").GetInt32());
+    }
+
+    [Fact]
     public async Task Clients_CreateThenGet_ReturnsCreatedClient()
     {
         var ct = TestContext.Current.CancellationToken;

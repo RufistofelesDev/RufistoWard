@@ -315,7 +315,18 @@ public sealed class AuthorizeEndpointTests
         // delivered as a form either.
         var ct = TestContext.Current.CancellationToken;
         const string redirectUri = "javascript:alert(document.cookie)";
-        using var factory = await CreateFactoryWithClientAsync("form-post-js", redirectUri);
+        using var factory = await CreateFactoryWithClientAsync("form-post-js", "https://placeholder.example/cb");
+
+        // Client.AddRedirectUri refuses this scheme, so write the row the way a raw SQL registration
+        // script would — the authorize endpoint must stay safe against data it did not validate.
+        using (var scope = factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<RufistoWardDbContext>();
+            var row = await db.ClientRedirectUris.SingleAsync(ct);
+            db.Entry(row).Property(r => r.Uri).CurrentValue = redirectUri;
+            await db.SaveChangesAsync(ct);
+        }
+
         using var client = factory.CreateClient(new WebApplicationFactoryClientOptions
         {
             AllowAutoRedirect = false,

@@ -5,6 +5,7 @@ using RufistoWard.Auth.Admin.Clients;
 using RufistoWard.Auth.Admin.Common;
 using RufistoWard.Identity.Entities;
 using RufistoWard.Identity.Interfaces;
+using RufistoWard.Identity.ValueObjects;
 using RufistoWard.Tokens.Persistence;
 
 public static class ClientAdminEndpoints
@@ -81,6 +82,16 @@ public static class ClientAdminEndpoints
             IClientRepository repo,
             CancellationToken cancellationToken) =>
         {
+            var uriErrors = request.RedirectUris
+                .Select(uri => (uri, error: RedirectUri.Validate(uri)))
+                .Where(x => x.error is not null)
+                .Select(x => $"'{x.uri}': {x.error}")
+                .ToArray();
+            if (uriErrors.Length > 0)
+            {
+                return Results.ValidationProblem(new Dictionary<string, string[]> { ["redirectUris"] = uriErrors });
+            }
+
             var clientId = Guid.NewGuid().ToString("N")[..16];
             var client = Client.Create(clientId, request.ClientName, request.RequireClientSecret);
 

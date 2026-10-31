@@ -1,6 +1,7 @@
 namespace RufistoWard.Identity.Entities;
 
 using RufistoWard.Identity.Interfaces;
+using RufistoWard.Identity.ValueObjects;
 
 public sealed class Client : ITenantScoped
 {
@@ -83,10 +84,12 @@ public sealed class Client : ITenantScoped
             _scopes.Add(new ClientScope(scope));
     }
 
+    /// <exception cref="ArgumentException">The URI is not absolute or uses a forbidden scheme.</exception>
     public void AddRedirectUri(string uri)
     {
-        if (_redirectUris.All(r => r.Uri != uri))
-            _redirectUris.Add(new ClientRedirectUri(uri));
+        var validated = new RedirectUri(uri);
+        if (_redirectUris.All(r => r.Uri != validated.Value))
+            _redirectUris.Add(new ClientRedirectUri(validated.Value));
     }
 
     public void AddGrantType(string grantType)

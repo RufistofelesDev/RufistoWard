@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using RufistoWard.Identity.Entities;
 using RufistoWard.Identity.Interfaces;
+using RufistoWard.Identity.ValueObjects;
 
 public sealed class AppNewModel(IClientRepository clientRepo) : PageModel
 {
@@ -37,12 +38,20 @@ public sealed class AppNewModel(IClientRepository clientRepo) : PageModel
             return Page();
         }
 
+        var uris = (redirectUris ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        var invalid = uris.Select(uri => (uri, error: RedirectUri.Validate(uri))).FirstOrDefault(x => x.error is not null);
+        if (invalid.error is not null)
+        {
+            ErrorMessage = $"Redirect URI '{invalid.uri}' is not allowed: {invalid.error}";
+            return Page();
+        }
+
         var clientId = Guid.NewGuid().ToString("N")[..16];
         var client = Client.Create(clientId, clientName, requireClientSecret);
 
         foreach (var gt in grantTypes ?? []) client.AddGrantType(gt);
 
-        foreach (var uri in (redirectUris ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+        foreach (var uri in uris)
             client.AddRedirectUri(uri);
 
         foreach (var scope in (allowedScopes ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
